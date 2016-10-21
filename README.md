@@ -8,7 +8,7 @@ This will be a docker image that will intelligently build deployment files as to
 
 ## How it works
 
-The `deploymentizer` uses a combination of ``*-cluster.yaml` files for cluster information, `*-var.yaml` files for configuration, and Mustache templates to generate the deployment files for a Kubernetes cluster. The `deploymentizer` also supprts external services for retrieving ENV values that are passed to the templates during generation.
+The `deploymentizer` uses a combination of ``*-cluster.yaml` files for cluster information, `*-var.yaml` files for configuration, and Mustache templates to generate the deployment files for a Kubernetes cluster. The `deploymentizer` also supports external services for retrieving ENV values that are passed to the templates during generation.
 
 Deploymentizer uses base cluster definition files to define the over-all set of services and the configuration variables that will be used to generate the deployment files. Default values can be set here with the ability to override at the cluster type, and specific cluster level. ENV values are loaded from a external service. This service is loaded as an external plugin at runtime and the returned values are injected during template rendering.
 
