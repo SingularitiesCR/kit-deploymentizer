@@ -1,7 +1,7 @@
 "use strict";
 
 const Promise = require("bluebird");
-const eventHandler = require("./event-handler");
+const logger = require("log4js").getLogger();
 
 /**
  * Wraps the supplied plugin.
@@ -14,7 +14,7 @@ class PluginHandler {
 	 * @return {[type]}            [description]
 	 */
 	constructor(pluginPath, options) {
-		eventHandler.emitInfo(`Plugin path used: ${pluginPath}`);
+		logger.debug(`Plugin path used: ${pluginPath}`);
 		const plugin = require(pluginPath)
 		this.configService = new plugin(options);
 	}
@@ -39,7 +39,7 @@ class PluginHandler {
 		return Promise.resolve(
 				this.configService.fetch( service, cluster )
 			).catch( (err) => {
-				eventHandler.emitFatal(`Configuration could not be loaded for ${service.name} for cluster ${cluster} stopping processing.`);
+				logger.fatal(`Configuration could not be loaded for ${service.name} for cluster ${cluster} stopping processing.`);
 				throw err;
 			});
 	}

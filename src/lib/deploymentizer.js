@@ -5,11 +5,13 @@ const path = require("path");
 const Promise = require("bluebird");
 const Generator = require("./generator");
 const yamlHandler = require("../util/yaml-handler");
-const eventHandler = require("../util/event-handler");
+const EventHandler = require("../util/event-handler");
 const PluginHandler = require("../util/plugin-handler");
+const logger = require("log4js").getLogger();
 const fse = require("fs-extra");
 const fseRemove = Promise.promisify(fse.remove);
 
+logger.setLevel((process.env.DEBUG === "true" ? "DEBUG" : "ERROR"));
 
 const resolve = function(workdir, pathStr) {
 		if (!pathStr) {
@@ -41,7 +43,8 @@ class Deploymentizer {
 				clusterType: (args.clusterType || undefined)
 			}
 		this.options.conf = this.parseConf(args.conf);
-		this.events = eventHandler;
+		this.events = new EventHandler();
+;
 	}
 
 	/**
@@ -51,14 +54,14 @@ class Deploymentizer {
 	process() {
 		return Promise.coroutine(function* () {
 
-			this.events.emitInfo(`Initialization: ${JSON.stringify(this.options)}`);
+			this.events.emitInfo(`Running for cluster ${this.options.clusterType} and resource ${this.options.resource || "all"}`);
 
 			if (this.options.clean) {
 				this.events.emitInfo(`Cleaning: ${path.join(this.paths.output, "/*")}`);
 				yield fseRemove(path.join(this.paths.output, "/*"));
 			}
 
-			this.events.emitInfo(`Loading base cluster definitions from: ${this.paths.base}`);
+			this.events.emitDebug(`Loading base cluster definitions from: ${this.paths.base}`);
 			const baseClusterDef = yield yamlHandler.loadBaseDefinitions(this.paths.base);
 
 			// Load the type configs into their own Map
@@ -121,7 +124,7 @@ class Deploymentizer {
 		return Promise.try( () => {
 			if (def.type()) {
 				if (this.options.clusterType != undefined && this.options.clusterType !== def.type()) {
-					this.events.emitInfo(`Only processing cluster type ${this.options.clusterType}, cluster ${def.name()} is ${def.type()}, skipping...` );
+					this.events.emitDebug(`Only processing cluster type ${this.options.clusterType}, cluster ${def.name()} is ${def.type()}, skipping...` );
 					return;
 				}
 				const type = typeDefinitions[def.type()];
@@ -134,7 +137,7 @@ class Deploymentizer {
 			}
 			// Merge with the Base Definitions.
 			def.apply(baseClusterDef);
-			this.events.emitInfo("Done Merging Cluster Definitions");
+			this.events.emitDebug("Done Merging Cluster Definitions");
 			if (def.disabled()) {
 				this.events.emitInfo(`Cluster ${def.name()} is disabled, skipping...`);
 				return;
@@ -147,7 +150,8 @@ class Deploymentizer {
 																				this.paths.output,
 																				this.options.save,
 																				configPlugin,
-																				this.options.resource);
+																				this.options.resource,
+																				this.events);
 				return generator.process();
 			}
 		});

@@ -6,11 +6,11 @@ const path = require("path");
 const yaml = require("js-yaml");
 const glob = require("glob-promise");
 const ClusterDefinition = require("../lib/cluster-definition");
-const eventHandler = require("./event-handler");
 const fseWriteFile = Promise.promisify(fse.writeFile);
 const fseReadFile = Promise.promisify(fse.readFile);
 const fseReadDir = Promise.promisify(fse.readdir);
 const fseStat = Promise.promisify(fse.stat);
+const logger = require("log4js").getLogger();
 
 // Static class for handling Files.
 class YamlHandler {
@@ -46,7 +46,6 @@ class YamlHandler {
       for (let d=0; d < dirs.length; d++ ) {
         // loop through the directories
         const dir = dirs[d];
-        eventHandler.emitInfo(`Loading Images for ${dir}`);
   		  const files = yield glob(path.join(basePath, dir, "**/*.yaml"));
         // loop through the files adding by name
         for (let f=0; f<files.length; f++) {
@@ -74,7 +73,6 @@ class YamlHandler {
   		const files = yield glob(`${loadPathPattern}/*-var.yaml`);
   		let typeDefs = {};
   		for (let i=0; i < files.length; i++) {
-        eventHandler.emitInfo(`Loading typedef: ${files[i]}`);
   			const def = yield YamlHandler.loadFile(files[i]);
   			typeDefs[def.metadata.type] = def;
   		};
@@ -106,7 +104,7 @@ class YamlHandler {
 			let clusters = [];
       for (let i=0; i<dirs.length; i++) {
         let dir = dirs[i];
-				eventHandler.emitInfo(`Found Cluster Dir: ${dir}`);
+				logger.debug(`Found Cluster Dir: ${dir}`);
 				// If there is not cluster file present, skip directory
         const exists = yield YamlHandler.exists(path.join(basePath, dir, "cluster.yaml"));
 				if ( exists ) {
@@ -114,7 +112,7 @@ class YamlHandler {
 					const config = yield YamlHandler.loadFile(path.join(basePath, dir, "configuration-var.yaml"));
 					clusters.push( new ClusterDefinition( cluster, config ) );
 				} else {
-					eventHandler.emitWarn(`No Cluster file found for ${dir}, skipping...`);
+					logger.debug(`No Cluster file found for ${dir}, skipping...`);
 				}
       }
 			return clusters;

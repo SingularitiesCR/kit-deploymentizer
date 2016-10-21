@@ -5,7 +5,6 @@ const path = require("path");
 const Promise = require("bluebird");
 const yamlHandler = require("../util/yaml-handler");
 const resourceHandler = require("../util/resource-handler");
-const eventHandler = require("../util/event-handler");
 const fse = require("fs-extra");
 const fseCopy = Promise.promisify(fse.copy);
 const fseMkdirs = Promise.promisify(fse.mkdirs);
@@ -46,8 +45,10 @@ class Generator {
 	 * @param	{[type]} exportPath				Where to save files
 	 * @param	{[type]} save							Save or not
 	 * @param	{[type]} configPlugin			Plugin to use for loading configuration information
+	 * @param	{[type]} resource 				resource to process
+	 * @param	{[type]} eventHandler 		to log events to
 	 */
-	constructor(clusterDef, imageResourceDefs, basePath, exportPath, save, configPlugin, resource) {
+	constructor(clusterDef, imageResourceDefs, basePath, exportPath, save, configPlugin, resource, eventHandler) {
 		this.options = {
 			clusterDef: clusterDef,
 			imageResourceDefs: imageResourceDefs,
@@ -57,6 +58,7 @@ class Generator {
 			resource: (resource || undefined)
 		};
 		this.configPlugin = configPlugin;
+		this.eventHandler = eventHandler;
 	}
 
 	/**
@@ -66,20 +68,20 @@ class Generator {
 	 * Returns a Promise fulfilled after saving file(s)
 	 */
 	process() {
+		this.eventHandler.emitInfo(`Calling process for ${this.options.clusterDef.name()}`);
 		return Promise.coroutine(function* () {
-			eventHandler.emitInfo(`Calling process for ${this.options.clusterDef.name()}`);
 			// Create the output directory if it already does not exist.
 			yield createClusterDirectory(this.options.exportPath);
 			const resources = this.options.clusterDef.resources();
 			if (_.isNil(resources)) {
-				eventHandler.emitWarn(`No Resources defined in cluster ${this.options.clusterDef.name()}`);
+				this.eventHandler.emitWarn(`No Resources defined in cluster ${this.options.clusterDef.name()}`);
 				return;
 			}
 			if (this.options.resource) {
 				// processing single resource
 				let resource = resources[this.options.resource]
 				if (!resource) {
-					eventHandler.emitWarn(`Resource requested ${this.options.resource} was not found in cluster ${this.options.clusterDef.name()}`);
+					this.eventHandler.emitWarn(`Resource requested ${this.options.resource} was not found in cluster ${this.options.clusterDef.name()}`);
 				} else{
 					yield this.processSingleResource(this.options.resource, resource);
 				}
@@ -99,11 +101,11 @@ class Generator {
 	processSingleResource(resourceName, resource) {
 		return Promise.coroutine(function* () {
 				if (resource.disable === true) {
-					eventHandler.emitWarn(`Resource ${resourceName} is disabled in cluster ${this.options.clusterDef.name()}, skipping...`);
+					this.eventHandler.emitDebug(`Resource ${resourceName} is disabled in cluster ${this.options.clusterDef.name()}, skipping...`);
 				} else {
 					let localConfig = yield this._createLocalConfiguration(this.options.clusterDef.configuration(), resourceName, resource);
 					if (resource.file) {
-						eventHandler.emitInfo(`Processing Resource ${resourceName} for cluster ${this.options.clusterDef.name()}`);
+						this.eventHandler.emitDebug(`Processing Resource ${resourceName} for cluster ${this.options.clusterDef.name()}`);
 						const fileStats = fileInfo(resource.file);
 						switch (fileStats.ext) {
 							case ".yaml":
@@ -119,7 +121,7 @@ class Generator {
 						}
 					}
 					if (resource.svc) {
-						eventHandler.emitInfo(`Processing Service ${resource.svc.name} for cluster ${this.options.clusterDef.name()}`);
+						this.eventHandler.emitDebug(`Processing Service ${resource.svc.name} for cluster ${this.options.clusterDef.name()}`);
 						// Create local config for each resource, includes local envs, svc info and image tag
 						yield this.processService(resource, localConfig);
 					}
@@ -187,15 +189,15 @@ class Generator {
 					if (artifact.image_tag) {
 						const artifactBranch = (localConfig[containerName].branch || localConfig.branch);
 						if (!this.options.imageResourceDefs[artifact.image_tag] || !this.options.imageResourceDefs[artifact.image_tag][artifactBranch]) {
-							eventHandler.emitWarn(JSON.stringify(this.options.imageResourceDefs));
+							this.eventHandler.emitWarn(JSON.stringify(this.options.imageResourceDefs));
 							throw new Error(`Image ${artifact.image_tag} not found for defined branch (${artifactBranch})`);
 						}
 						localConfig[containerName].image = this.options.imageResourceDefs[artifact.image_tag][artifactBranch].image;
 					} else {
-						eventHandler.emitWarn(`No image tag found for ${artifact.name}`);
+						this.eventHandler.emitWarn(`No image tag found for ${artifact.name}`);
 					}
 				} else {
-					eventHandler.emitWarn(`Image ${localConfig[containerName].image} already defined for ${artifact.name}`);
+					this.eventHandler.emitWarn(`Image ${localConfig[containerName].image} already defined for ${artifact.name}`);
 				}
 			}
 
@@ -203,7 +205,6 @@ class Generator {
 			if (resource.svc) {
 				localConfig.svc = resource.svc;
 			}
-			eventHandler.emitDebug(`Local Configuration for ${resourceName}: ${JSON.stringify(localConfig)}`);
 			return localConfig;
 		}).bind(this)();
 	}
@@ -223,7 +224,7 @@ class Generator {
 				if (this.options.save === true) {
 					yield yamlHandler.saveResourceFile(this.options.exportPath, fileStats.name, resourceYaml);
 				} else {
-					eventHandler.emitInfo(`Saving is disabled, skipping ${fileStats.name}`);
+					this.eventHandler.emitDebug(`Saving is disabled, skipping ${fileStats.name}`);
 				}
 			} catch (e) {
 				console.log(e);
@@ -240,11 +241,11 @@ class Generator {
 	 */
 	processCopyResource(resource, fileStats) {
 		return Promise.coroutine(function* () {
-			eventHandler.emitInfo(`Copying file from ${path.join(this.options.basePath, resource.file)} to ${path.join(this.options.exportPath, fileStats.base)}`);
+			this.eventHandler.emitDebug(`Copying file from ${path.join(this.options.basePath, resource.file)} to ${path.join(this.options.exportPath, fileStats.base)}`);
 			if (this.options.save === true) {
 				return yield fseCopy(path.join(this.options.basePath, resource.file), path.join(this.options.exportPath, fileStats.base));
 			} else {
-				eventHandler.emitInfo(`Saving is disabled, skipping ${fileStats.name}`);
+				this.eventHandler.emitDebug(`Saving is disabled, skipping ${fileStats.name}`);
 				return;
 			}
 		}).bind(this)();
@@ -264,7 +265,7 @@ class Generator {
 			if (this.options.save === true) {
 				yield yamlHandler.saveResourceFile(this.options.exportPath, resource.svc.name, svcYaml);
 			} else {
-				eventHandler.emitInfo(`Saving is disabled, skipping ${resource.svc.name}`);
+				this.eventHandler.emitDebug(`Saving is disabled, skipping ${resource.svc.name}`);
 			}
 			return;
 		}).bind(this)();

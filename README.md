@@ -87,7 +87,7 @@ plugin:
 
 ##### base-cluster.yaml
 
-Defines the over all list of resources. 
+Defines the over all list of resources.
 These are included by default in all local cluster configuration unless explicitly disabled.
 
 
@@ -219,8 +219,8 @@ The name of the external ENV must match the defined name in the `resource.[RESOU
 
 ##### Disable a Service
 By default any resource defined in a cluster is considered enabled. You can explicitly change this by setting the value `disable: true`.  
-For example, in order to disable a service for a specific cluster, add the `resources.[RESOURCE-NAME].disable: true`. This will keep the `deploymentizer` from generating a deployment/service file for that specific resource. 
-If managing lots of clusters, it can be helpful to define your resource in the base cluster file, but configure it as `disable: true` initially. Then only enable it for clusters your want that service deployed on. 
+For example, in order to disable a service for a specific cluster, add the `resources.[RESOURCE-NAME].disable: true`. This will keep the `deploymentizer` from generating a deployment/service file for that specific resource.
+If managing lots of clusters, it can be helpful to define your resource in the base cluster file, but configure it as `disable: true` initially. Then only enable it for clusters your want that service deployed on.
 The other option is to configure it in the base cluster as `disable: false` and enabled it specifically for each cluster.
 
 ##### Adding a Service
@@ -279,7 +279,7 @@ spec: {{{! If Ports are not defined, default to below }}}
 
 
 #### Mapping configuration in template
-This is an example of the values passed to the mustache template engine to render. This example is from the test data located in the `/test/fixtures` directory. 
+This is an example of the values passed to the mustache template engine to render. This example is from the test data located in the `/test/fixtures` directory.
 ``` json
 {
     "kind": "ResourceConfig",
@@ -355,10 +355,10 @@ This is an example of the values passed to the mustache template engine to rende
 ```
 
 #### Plugin For ENV configuration
-The plugin module should export a class that will be instantiated passing in any parameters defined in the 
+The plugin module should export a class that will be instantiated passing in any parameters defined in the
 kit configuration file loaded by the deploymentizer to the objects constructor.
 
-The class must contain a function named `fetch`, accepting the parameters `( service, cluster )`. 
+The class must contain a function named `fetch`, accepting the parameters `( service, cluster )`.
 Service is the resource container object, and cluster is the cluster name as defined by the `ClusterNamespace.metadata.name`.
 
 Example usage:
@@ -441,7 +441,10 @@ The following environment variables are used by this service.
 | `CLEAN` | Set if the output directory should be deleted and re-created before generating manifest files | yes | `false` |
 | `SAVE` | Sets if the generated manifest files are saved to the output diretory or not | yes | `true` |
 | `CONF` | Sets the path the config file to load | yes | `/manifests/kit.yaml` |
+| `WORKDIR` | Sets the working directory for reading paths defined in the conf file. Allows absolute paths in conf also. | no | `` |
 | `RESOURCE` | Defines specific resource to generate. If not set, generates all resources. | no | `` |
+| `CLUSTER_TYPE` | Defines the cluster type to process (testing, production, etc). If not defined processes all clusters found  | no | `` |
+| `DEBUG` | Log debug events | no | `false` |
 
 ## Contributing
 

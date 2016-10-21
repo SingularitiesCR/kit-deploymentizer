@@ -1,6 +1,7 @@
 "use strict";
-var logger = require("log4js").getLogger();
-var eventHandler = require("../../src/util/event-handler");
+const logger = require("log4js").getLogger();
+const EventHandler = require("../../src/util/event-handler");
+const eventHandler = new EventHandler();
 
 /**
  * Register event listener so we see some output during test runs.

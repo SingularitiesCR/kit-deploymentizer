@@ -10,6 +10,7 @@ describe("Deploymentizer", () => {
 			process.env.SECRET_USERNAME = "myusername";
 			process.env.SECRET_PASSWORD = "mypassword";
 			process.env.GITHUB_TOKEN = "s@mpler@ndomt0ken";
+			process.env.DEBUG = "true";
 
 			var cmd = "/src/deploymentizer --conf=\"/test/fixture/kit.yaml\"";
 

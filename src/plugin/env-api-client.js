@@ -2,7 +2,7 @@
 
 const Promise = require("bluebird");
 const rp = require("request-promise");
-const eventHandler = require("../util/event-handler");
+const logger = require("log4js").getLogger();
 
 /**
  * Class for accessing the EnvApi Service.
@@ -62,7 +62,7 @@ class EnvApiClient {
 	fetch( service, cluster ) {
 		return Promise.coroutine(function* () {
 			if (!service.annotations || !service.annotations[EnvApiClient.annotationServiceName]) {
-				eventHandler.emitWarn(`No env-api-service annotation found for ${service.name}`);
+				logger.warn(`No env-api-service annotation found for ${service.name}`);
 				return;
 			}
 			const uri = `${this.apiUrl}/${service.annotations[EnvApiClient.annotationServiceName]}`;
@@ -82,7 +82,7 @@ class EnvApiClient {
 			let result = {};
 			result = this.convertK8sResult(config, result);
 			if (this.k8sBranch && result.branch && result.branch !== query.branch) {
-				eventHandler.emitInfo(`Pulling envs from ${result.branch} branch`);
+				logger.debug(`Pulling envs from ${result.branch} branch`);
 				options.qs.branch = result.branch;
 				config = yield this.request(options);
 			}
@@ -90,7 +90,7 @@ class EnvApiClient {
 			return result;
 		}).bind(this)().catch(function (err) {
 			// API call failed...
-			eventHandler.emitFatal(`Unable to fetch or convert ENV Config ${JSON.stringify(err)}`);
+			logger.fatal(`Unable to fetch or convert ENV Config ${JSON.stringify(err)}`);
 			throw err;
 		});
 	}

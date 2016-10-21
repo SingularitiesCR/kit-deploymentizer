@@ -6,7 +6,6 @@ const program = require("commander");
 const packageJson = require("../package.json");
 const Promise = require("bluebird");
 const Deploymentizer = require("./lib/deploymentizer");
-const eventHandler = require("./util/event-handler");
 const yamlHandler = require("./util/yaml-handler");
 const exit = process.exit;
 
@@ -40,7 +39,6 @@ const loadConf = function(confPath) {
 			const conf = yield yamlHandler.loadFile(confPath);
 			return conf;
 		} else {
-			eventHandler.emitFatal("No Configuration file found.");
 			throw new Error("No Configuration file found");
 		}
 	})();
@@ -62,22 +60,6 @@ program
 	.parse(process.argv)
 ;
 
-// Enable logging of all events from the deploymentizer
-eventHandler.on(eventHandler.INFO, function(message) {
-	logger.info(message);
-});
-eventHandler.on(eventHandler.WARN, function(message) {
-	logger.warn(message);
-});
-eventHandler.on(eventHandler.FATAL, function(message) {
-	logger.fatal(message);
-});
-if (program.debug) {
-	eventHandler.on(eventHandler.DEBUG, function(message) {
-		logger.debug(message);
-	});
-}
-
 loadConf(program.conf).then( (conf) => {
 	const deploymentizer = new Deploymentizer({
 		clean: program.clean,
@@ -87,6 +69,23 @@ loadConf(program.conf).then( (conf) => {
 		resource: program.resource,
 		clusterType: program.clusterType
 	});
+	// Enable logging of all events from the deploymentizer
+	deploymentizer.events.on(deploymentizer.events.INFO, function(message) {
+		logger.info(message);
+	});
+	deploymentizer.events.on(deploymentizer.events.WARN, function(message) {
+		logger.warn(message);
+	});
+	deploymentizer.events.on(deploymentizer.events.FATAL, function(message) {
+		logger.fatal(message);
+	});
+	if (program.debug) {
+		process.env.DEBUG = "true";
+		deploymentizer.events.on(deploymentizer.events.DEBUG, function(message) {
+			logger.debug(message);
+		});
+	}
+
 	// Run the deploymentizer
 	return deploymentizer.process()
 		.then(function() {

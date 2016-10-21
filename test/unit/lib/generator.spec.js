@@ -4,9 +4,11 @@ const os = require("os");
 const expect = require("chai").expect;
 const Promise = require("bluebird");
 const yamlHandler = require("../../../src/util/yaml-handler");
+const EventHandler = require("../../../src/util/event-handler");
 const Generator = require("../../../src/lib/generator");
 const fse = require("fs-extra");
 const path = require("path");
+
 
 const configStub = {
 	fetch: function() {
@@ -24,9 +26,10 @@ describe("Generator", () => {
 	describe("with empty cluster", () => {
 		it("should not fail", (done) => {
 			return Promise.coroutine(function* () {
+				const eventHandler = new EventHandler();
 				const clusterDefs = yield yamlHandler.loadClusterDefinitions("./test/fixture/empty-clusters");
 				const clusterDef = clusterDefs[0];
-				const generator = new Generator(clusterDef, {}, "", os.tmpdir(), true, configStub);
+				const generator = new Generator(clusterDef, {}, "", os.tmpdir(), true, configStub, "testrosie", eventHandler);
 				expect(clusterDef).to.exist;
 				yield generator.process();
 				done();
