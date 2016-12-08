@@ -57,7 +57,7 @@ class Deploymentizer {
 			this.events.emitInfo(`Running for cluster ${this.options.clusterType} and resource ${this.options.resource || "all"}`);
 
 			if (this.options.clean) {
-				this.events.emitInfo(`Cleaning: ${path.join(this.paths.output, "/*")}`);
+				this.events.emitDebug(`Cleaning: ${path.join(this.paths.output, "/*")}`);
 				yield fseRemove(path.join(this.paths.output, "/*"));
 			}
 
