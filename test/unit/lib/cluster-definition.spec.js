@@ -82,8 +82,8 @@ describe("Cluster Definitions", () =>  {
 			return Promise.coroutine(function* () {
 				const clusterDefs = yield yamlHandler.loadClusterDefinitions("./test/fixture/clusters");
 				expect(clusterDefs).to.exist;
-				expect(clusterDefs.length).to.equal(3);
-				const clusterDef = clusterDefs[2];
+				expect(clusterDefs.length).to.equal(4);
+				const clusterDef = clusterDefs[3];
 				expect(clusterDef).to.exist;
 				expect(clusterDef.name()).to.equal("test-fixture");
 				expect(clusterDef.type()).to.equal("test");
@@ -100,10 +100,10 @@ describe("Cluster Definitions", () =>  {
 			return Promise.coroutine(function* () {
 				const clusterDefs = yield yamlHandler.loadClusterDefinitions("./test/fixture/clusters");
 				expect(clusterDefs).to.exist;
-				expect(clusterDefs.length).to.equal(3);
+				expect(clusterDefs.length).to.equal(4);
 
 				// Load Cluster Def
-				const clusterDef = clusterDefs[2];
+				const clusterDef = clusterDefs[3];
 				expect(clusterDef).to.exist;
 				expect(clusterDef.name()).to.equal("test-fixture");
 				expect(clusterDef.rsConfig.deployment).to.exist;

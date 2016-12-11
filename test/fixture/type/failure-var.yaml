@@ -1,0 +1,6 @@
+# Cluster Type specific Configuration and ENV settings.
+#
+kind: ResourceConfig
+metadata:
+  type: failure
+env:

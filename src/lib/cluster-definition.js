@@ -57,6 +57,13 @@ class ClusterDefinition {
 	}
 
 	/**
+	 * If true, will not halt processing if a failure occures for a single resource.
+	 */
+	allowFailure() {
+		return (this.cluster.metadata.allowFailure && this.cluster.metadata.allowFailure === true)
+	}
+
+	/**
 	 * Resources for this cluster
 	 * @return { "resource-name": data, ...} resource map by name
 	 */

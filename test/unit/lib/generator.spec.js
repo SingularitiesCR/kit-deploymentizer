@@ -66,10 +66,11 @@ describe("Generator", () => {
 		it("should create copy of config, merging in values from resource", (done) => {
 			const imageResources = { "node-auth": { testing: { image: "SOME-TESTING-IMAGE"}, develop: { image: "SOME-DEVELOP-IMAGE"} } };
 
+			const eventHandler = new EventHandler();
 			return Promise.coroutine(function* () {
 				const clusterDefs = yield yamlHandler.loadClusterDefinitions("./test/fixture/clusters");
-				const clusterDef = clusterDefs[2];
-				const generator = new Generator(clusterDef, imageResources, "./test/fixture/resources", os.tmpdir(), true, configStub);
+				const clusterDef = clusterDefs[3];
+				const generator = new Generator(clusterDef, imageResources, "./test/fixture/resources", os.tmpdir(), true, configStub, undefined, eventHandler);
 				expect(clusterDef).to.exist;
 				if (!fse.existsSync( path.join(os.tmpdir(), clusterDef.name())) ) {
 					fse.mkdirsSync( path.join(os.tmpdir(), clusterDef.name()) );
@@ -95,10 +96,11 @@ describe("Generator", () => {
 		it("should create copy of config, without plugin", (done) => {
 			const imageResources = { "node-auth": { testing: { image: "SOME-TESTING-IMAGE"}, develop: { image: "SOME-DEVELOP-IMAGE"} } };
 
+			const eventHandler = new EventHandler();
 			return Promise.coroutine(function* () {
 				const clusterDefs = yield yamlHandler.loadClusterDefinitions("./test/fixture/clusters");
-				const clusterDef = clusterDefs[2];
-				const generator = new Generator(clusterDef, imageResources, "./test/fixture/resources", os.tmpdir(), true, undefined);
+				const clusterDef = clusterDefs[3];
+				const generator = new Generator(clusterDef, imageResources, "./test/fixture/resources", os.tmpdir(), true, undefined, undefined, eventHandler);
 				expect(clusterDef).to.exist;
 				if (!fse.existsSync( path.join(os.tmpdir(), clusterDef.name())) ) {
 					fse.mkdirsSync( path.join(os.tmpdir(), clusterDef.name()) );

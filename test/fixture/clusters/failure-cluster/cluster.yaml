@@ -1,0 +1,25 @@
+kind: ClusterNamespace
+metadata:
+  name: failure-fixture
+  branch: test
+  type: failure
+  allowFailure: true
+resources:
+  auth:
+    branch: develop
+    svc:
+      name: auth-svc
+      labels:
+        - name: "app"
+          value: "invisionapp"
+    containers:
+      auth-con:
+        name: auth
+        env:
+          - name: test
+            value: testvalue
+  activity:
+    containers:
+      activity-con:
+        image_tag: invision/node-activity
+        name: activity

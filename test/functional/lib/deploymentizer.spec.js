@@ -25,6 +25,11 @@ describe("Deploymentizer", () => {
 						save: true,
 						conf: conf
 					});
+				// multiple events will get fired for failure cluster.
+				deployer.events.on(deployer.events.WARN, function(message) {
+					console.log("WARN::::" + message);
+				});
+
 				expect(deployer).to.exist;
 				// generate the files from our test fixtures
 				yield deployer.process();
@@ -80,7 +85,7 @@ describe("Deploymentizer", () => {
 				fse.mkdirsSync(path.join(os.tmpdir(), "generated"));
 
 				let conf = yield yamlHandler.loadFile("/test/fixture/kit.yaml");
-				// remove the plugin 
+				// remove the plugin
 				delete conf.plugin;
 
 				const deployer = new Deploymentizer ({
@@ -123,7 +128,7 @@ describe("Deploymentizer", () => {
 				fse.mkdirsSync(path.join(os.tmpdir(), "generated"));
 
 				let conf = yield yamlHandler.loadFile("/test/fixture/kit.yaml");
-				// remove the plugin 
+				// remove the plugin
 				delete conf.plugin;
 
 				const deployer = new Deploymentizer ({
@@ -214,7 +219,6 @@ describe("Deploymentizer", () => {
 				done(err);
 			});
 		});
-
 
 	});
 });

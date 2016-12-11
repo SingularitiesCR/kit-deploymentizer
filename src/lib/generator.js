@@ -99,6 +99,7 @@ class Generator {
 	}
 
 	processSingleResource(resourceName, resource) {
+		let _self = this;
 		return Promise.coroutine(function* () {
 				if (resource.disable === true) {
 					this.eventHandler.emitDebug(`Resource ${resourceName} is disabled in cluster ${this.options.clusterDef.name()}, skipping...`);
@@ -126,7 +127,13 @@ class Generator {
 						yield this.processService(resource, localConfig);
 					}
 				}
-		}).bind(this)();
+		}).bind(this)().catch( (err) => {
+			if (_self.options.clusterDef.allowFailure()) {
+				_self.eventHandler.emitWarn( (err.message || `Error processing ${resourceName} in cluster ${this.options.clusterDef.name()}`));
+			} else {
+				throw err;
+			}
+		});
 	}
 
 	/**
