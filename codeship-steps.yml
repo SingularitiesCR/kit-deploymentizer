@@ -15,7 +15,6 @@
 
 - name: Registry
   type: serial
-  service: app
   encrypted_dockercfg_path: codeship-dockercfg.encrypted
   steps:
   - name: Push version tag
@@ -24,20 +23,22 @@
     image_tag: "v2"
     registry: quay.io
     image_name: quay.io/invision/kit-deploymentizer
-  - name: Push branch and commit tag
-    type: serial
-    tag: ^(master|PRERELEASE-.*)$
-    steps:
-    - name: Push Branch Tag
-      type: push
-      registry: quay.io
-      image_tag: "{{ .Branch }}"
-      image_name: quay.io/invision/kit-deploymentizer
-    - name: Push branch-commit tag
-      type: push
-      registry: quay.io
-      image_tag: "{{ .Branch }}-{{ .CommitID }}"
-      image_name: quay.io/invision/kit-deploymentizer
+    service: app
+    encrypted_dockercfg_path: codeship-dockercfg.encrypted
+  - name: Push Branch Tag
+    type: push
+    registry: quay.io
+    image_tag: "{{ .Branch }}"
+    image_name: quay.io/invision/kit-deploymentizer
+    service: app
+    encrypted_dockercfg_path: codeship-dockercfg.encrypted
+  - name: Push branch-commit tag
+    type: push
+    registry: quay.io
+    image_tag: "{{ .Branch }}-{{ .CommitID }}"
+    image_name: quay.io/invision/kit-deploymentizer
+    service: app
+    encrypted_dockercfg_path: codeship-dockercfg.encrypted
 
 - name: Publish
   tag: ^(master|PRERELEASE-.*)$
