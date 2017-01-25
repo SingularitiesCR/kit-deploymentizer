@@ -10,7 +10,7 @@ const logger = require("log4js").getLogger();
 class EnvApiClient {
 
 	/**
-	 * Requires the apiUrl and apiToken to be set included as parameters.
+	 * Requires the apiUrl to be set as parameters. The ENVAPI_ACCESS_TOKEN is required as a ENV var.
 	 * @param  {[type]} options
 	 */
 	constructor(options) {
@@ -22,10 +22,13 @@ class EnvApiClient {
 			throw new Error("The apiUrl is a required configuration value.")
 		}
 		this.apiUrl = options.apiUrl;
-		this.apiToken = options.apiToken;
 		this.timeout = (options.timeout || 15000);
 		this.defaultBranch = (options.defaultBranch || "master");
 		this.request = rp;
+		this.supportFallback = false;
+		if (options.supportFallback && (options.supportFallback === "true"|| options.supportFallback === true)) {
+			this.supportFallback = true;
+		}
 	}
 
 	/**
@@ -44,11 +47,8 @@ class EnvApiClient {
 	 * to use when invoking the env-api service. If this annotation is not present the request
 	 * is skipped. The annotation is `kit-deploymentizer/env-api-service: [GIT-HUB-PROJECT-NAME]`
 	 *
-	 * Another, optional, annotation sets the branch to use by the env-api service. This annotation
-	 * is `kit-deploymentizer/env-api-branch: [GIT-HUB-BRANCH-NAME]`
-	 *
-	 * One call is made to retrieve the k8s values, then another is made for env values. If a branch
-	 * is defined in the k8s values that branch is used for the request for the env values.
+	 * Call is made to get environment varibles for a given service. Supports falling back to the
+	 * v2 Endpoint if the v3 returns a 404.
 	 *
 	 * Example Result for both ENV and k8s request:
 	 * ```
@@ -83,26 +83,38 @@ class EnvApiClient {
 				return;
 			}
 
-			let branch = this.defaultBranch;
-
-			if (service.annotations[EnvApiClient.annotationBranchName]) {
-				branch = service.annotations[EnvApiClient.annotationBranchName]
+			let params = {
+				service: service.annotations[EnvApiClient.annotationServiceName],
+				environment: cluster.metadata().environment,
+				cluster: cluster.name(),
+				metadata: cluster.metadata()
 			}
-			let k8sResponse = yield this.callService(service, cluster, branch, "k8s");
-
-			let result = {};
-			result = this.convertK8sResult(k8sResponse, result);
-			// check to see if the
-			if (result.branch && result.branch !== branch) {
-				branch = result.branch;
-			}
-
-			let envResponse = yield this.callService(service, cluster, branch, "env");
-			result = this.convertEnvResult(envResponse, result);
-			return result;
+			return this.callv3Api(params).then( (res) => {
+				if (res.status && res.status === "success") {
+					let result = {}
+					result = this.convertEnvResult(res, result);
+					return result;
+				} else {
+					throw new Error( (res.message || "No error message supplied") );
+				}
+			}).catch( (err) => {
+				// try v2 of API if supported and we receieved a 404 from v3 endpoint
+				if (this.supportFallback && err.statusCode && err.statusCode == 404) {
+					logger.warn(`Trying Fallback method with params ${this.defaultBranch}, ${service}, ${params.cluster}`);
+					return this.callv2Api(this.defaultBranch, service, params.cluster)
+						.then( (result) => {
+							return result;
+						}).catch( (err) => {
+							logger.error("Fallback method error: " + JSON.stringify(err));
+							throw err;
+						});
+				} else {
+					logger.error(`Fallback not supported and/or wrong error code: ${err.statusCode || err}`);
+					throw err;
+				}
+			});
 
 		}).bind(this)().catch(function (err) {
-			logger.fatal(`Error calling env-api for ${service.name}/${cluster}:: ${JSON.stringify(err)}`);
 			let errMsg = err.message || err;
 			// API call failed, parse returned error message if possible...
 			if (err.response && err.response.body && err.response.body.status === "error") {
@@ -113,13 +125,42 @@ class EnvApiClient {
 	}
 
 	/**
-	 * Checks returned response for error status
+	 * Calls the V3 Endpoint. This is a POST with all parameters in the body of the message
 	 */
-	validateResponse(response) {
-		if (response.status && response.status === "error") {
-			const errMsg = this.convertErrorResponse(response);
-			throw new Error(errMsg);
-		}
+	callv3Api(payload) {
+		const uri = `${this.apiUrl}/v3/vars`;
+		let options = {
+			method: "POST",
+			uri: uri,
+			headers: { 'X-Auth-Token': this.apiToken },
+			body: payload,
+			json: true,
+			timeout: this.timeout
+		};
+		return this.request(options);
+	}
+
+	/**
+	 * Calls the v2 Endpoint. uses GET and query params
+	 */
+	callv2Api(branch, service, clusterName) {
+		return Promise.coroutine(function* () {
+			if (service.annotations[EnvApiClient.annotationBranchName]) {
+				branch = service.annotations[EnvApiClient.annotationBranchName]
+			}
+			let k8sResponse = yield this.invokeV2Service(service, clusterName, branch, "k8s");
+
+			let result = {};
+			result = this.convertK8sResult(k8sResponse, result);
+			// check to see if the
+			if (result.branch && result.branch !== branch) {
+				branch = result.branch;
+			}
+
+			let envResponse = yield this.invokeV2Service(service, clusterName, branch, "env");
+			result = this.convertEnvResult(envResponse, result);
+			return result;
+		}).bind(this)();
 	}
 
 	/**
@@ -136,10 +177,10 @@ class EnvApiClient {
 	}
 
 	/**
-	 * Fetchs the k8s or env values
+	 * Fetchs the envs
 	 */
-	callService(service, cluster, branch, type) {
-		const uri = `${this.apiUrl}/${type}/${service.annotations[EnvApiClient.annotationServiceName]}`;
+	invokeV2Service(service, cluster, branch, type) {
+		const uri = `${this.apiUrl}/v2/${type}/${service.annotations[EnvApiClient.annotationServiceName]}`;
 		let query = { env: cluster, branch: branch };
 		let options = {
 			uri: uri,
@@ -148,9 +189,12 @@ class EnvApiClient {
 			json: true,
 			timeout: this.timeout
 		};
-		return this.request(options).then( (data) => {
-			this.validateResponse(data);
-			return data;
+		return this.request(options).then( (response) => {
+			if (response.status && response.status === "error") {
+				const errMsg = this.convertErrorResponse(response);
+				throw new Error(errMsg);
+			}
+			return response;
 		});
 	}
 

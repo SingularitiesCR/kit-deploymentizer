@@ -32,6 +32,13 @@ class ClusterDefinition {
 	}
 
 	/**
+	 * Helper method for accessing metadata
+	 */
+	metadata() {
+		return this.cluster.metadata;
+	}
+
+	/**
 	 * Type of this cluster
 	 * @return {string} one of [develop, testing, production]
 	 */

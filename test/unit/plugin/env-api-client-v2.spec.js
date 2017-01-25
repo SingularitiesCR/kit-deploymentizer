@@ -6,6 +6,14 @@ const sinon = require("sinon");
 
 describe("ENV API Client Configuration plugin", () =>  {
 
+	before( () => {
+		process.env.ENVAPI_ACCESS_TOKEN = "sometoken";
+	});
+
+	after( () => {
+		delete process.env.ENVAPI_ACCESS_TOKEN;
+	});
+
 	describe("Load Client", () =>  {
 		it("should fail with validation error", (done) => {
 			try {

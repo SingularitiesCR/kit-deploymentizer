@@ -177,7 +177,7 @@ class Generator {
 				// If we have a plugin use it to load env and other config values
 				if (this.configPlugin) {
 					// get Configuration from plugin
-					const envConfig = yield this.configPlugin.fetch(artifact, this.options.clusterDef.name());
+					const envConfig = yield this.configPlugin.fetch(artifact, this.options.clusterDef);
 					// merge these in --> At this point, envConfig will overwrite anything in the cluster def.
 					localConfig[containerName] = resourceHandler.merge(artifact, envConfig);
 				}

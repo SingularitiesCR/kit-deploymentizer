@@ -14,8 +14,12 @@ class EnvApiClient {
 	 * @param  {[type]} options
 	 */
 	constructor(options) {
-		if (!options.apiUrl || !options.apiToken) {
-			throw new Error("Both apiToken and apiUrl are required configuration values.")
+		this.apiToken = process.env.ENVAPI_ACCESS_TOKEN;
+		if (!this.apiToken) {
+			throw new Error("The environment variable ENVAPI_ACCESS_TOKEN is required.")
+		}
+		if (!options.apiUrl) {
+			throw new Error("The apiUrl is a required configuration value.")
 		}
 		this.apiUrl = options.apiUrl;
 		this.apiToken = options.apiToken;

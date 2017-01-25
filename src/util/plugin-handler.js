@@ -30,7 +30,7 @@ class PluginHandler {
 	 * other formats can be added later.
 	 *
 	 * @param  {[type]} service     object to get env values for, should contain the resource service object
-	 * @param  {[type]} cluster     that the service will run on
+	 * @param  {[type]} cluster     definition of the cluster that the service will run on
 	 * @return {[type]}             A promise fulfilled with the ENV values for the given service/env/cluster
 	 */
 	fetch( service, cluster ) {
@@ -38,7 +38,7 @@ class PluginHandler {
 		return Promise.resolve(
 				this.configService.fetch( service, cluster )
 			).catch( (err) => {
-				logger.error(`Configuration could not be loaded for ${service.name} for cluster ${cluster}.`);
+				logger.error(`Configuration could not be loaded for ${service.name} for cluster ${cluster.name()}.`);
 				throw err;
 			});
 	}

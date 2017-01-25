@@ -32,7 +32,7 @@ class FileConfig {
 				throw new Error("Missing argument, all values are required.");
 			}
 
-			let file = path.join( this.configPath, service.name, `${cluster}-env.json` );
+			let file = path.join( this.configPath, service.name, `${cluster.name()}-env.json` );
 			const data = yield readFilePromise(file, "utf8");
 			let config = JSON.parse( data );
 			return config;

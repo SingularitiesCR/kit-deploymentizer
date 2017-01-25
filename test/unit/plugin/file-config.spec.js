@@ -2,6 +2,7 @@
 
 var expect = require("chai").expect;
 const Promise = require("bluebird");
+const ClusterDefinition = require("../../../src/lib/cluster-definition");
 
 describe("File Configuration plugin", () =>  {
 
@@ -11,8 +12,13 @@ describe("File Configuration plugin", () =>  {
 	console.log(fileConfig);
 	describe("Load", () =>  {
 		it("should load configuration object", (done) => {
+
+			const cluster = {kind: "ClusterNamespace", metadata: {name: "example", type: "staging", environment: "staging"} };
+			const config = {kind: "ResourceConfig", env: []};
+			const clusterDef = new ClusterDefinition(cluster, config);
+
 			Promise.coroutine(function* () {
-				const config = yield fileConfig.fetch( { name: "service" }, "example" )
+				const config = yield fileConfig.fetch( { name: "service" }, clusterDef )
 				expect(config).to.exist;
 				expect(config.branch).to.exist;
 				expect(config.branch).to.equal("develop");
@@ -27,8 +33,12 @@ describe("File Configuration plugin", () =>  {
 		});
 
 		it("should fail with file not found", (done) => {
+			const cluster = {kind: "ClusterNamespace", metadata: {name: "not-here", type: "staging", environment: "staging"} };
+			const config = {kind: "ResourceConfig", env: []};
+			const clusterDef = new ClusterDefinition(cluster, config);
+
 			Promise.coroutine(function* () {
-				const config = yield fileConfig.fetch( { name: "service" }, "not-here" )
+				const config = yield fileConfig.fetch( { name: "service" }, clusterDef )
 				done(new Error("Should faile with file not found"));
 			})().catch( (err) => {
 				done();
