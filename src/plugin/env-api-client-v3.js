@@ -95,16 +95,16 @@ class EnvApiClient {
 			return this.callv3Api(params).then( (res) => {
 				if (res.status && res.status === "success") {
 					let result = {}
-					result = this.convertEnvResult(res, result);
+					result = this.convertEnvResult(res.values, result);
 					return result;
 				} else {
 					throw new Error( (res.message || "No error message supplied") );
 				}
 			}).catch( (err) => {
-				// try v2 of API if supported and we receieved a 404 from v3 endpoint
+				// try v1 of API if supported and we receieved a 404 from v3 endpoint
 				if (this.supportFallback && err.statusCode && err.statusCode == 404) {
 					logger.warn(`Trying Fallback method with params ${this.defaultBranch}, ${service}, ${params.cluster}`);
-					return this.callv2Api(this.defaultBranch, service, params.cluster)
+					return this.callv1Api(this.defaultBranch, service, params.cluster)
 						.then( (result) => {
 							return result;
 						}).catch( (err) => {
@@ -146,22 +146,30 @@ class EnvApiClient {
 	/**
 	 * Calls the v2 Endpoint. uses GET and query params
 	 */
-	callv2Api(branch, service, clusterName) {
+	callv1Api(branch, service, clusterName) {
 		return Promise.coroutine(function* () {
-			if (service.annotations[EnvApiClient.annotationBranchName]) {
-				branch = service.annotations[EnvApiClient.annotationBranchName]
+			const uri = `${this.apiUrl}/v1/service/${service.annotations[EnvApiClient.annotationServiceName]}`;
+			let query = { env: clusterName };
+			// if a branch is specified pass that along
+			if (service.annotations || service.annotations[EnvApiClient.annotationBranchName]) {
+				query.branch = service.annotations[EnvApiClient.annotationBranchName]
 			}
-			let k8sResponse = yield this.invokeV2Service(service, clusterName, branch, "k8s");
-
+			let options = {
+				uri: uri,
+				qs: query,
+				headers: { 'X-Auth-Token': this.apiToken },
+				json: true,
+				timeout: this.timeout
+			};
+			let config = yield this.request(options);
 			let result = {};
-			result = this.convertK8sResult(k8sResponse, result);
-			// check to see if the
-			if (result.branch && result.branch !== branch) {
-				branch = result.branch;
+			result = this.convertK8sResult(config.k8s, result);
+			if (this.k8sBranch && result.branch && result.branch !== query.branch) {
+				logger.debug(`Pulling envs from ${result.branch} branch`);
+				options.qs.branch = result.branch;
+				config = yield this.request(options);
 			}
-
-			let envResponse = yield this.invokeV2Service(service, clusterName, branch, "env");
-			result = this.convertEnvResult(envResponse, result);
+			result = this.convertEnvResult(config.env, result);
 			return result;
 		}).bind(this)();
 	}
@@ -182,33 +190,13 @@ class EnvApiClient {
 	/**
 	 * Fetchs the envs
 	 */
-	invokeV2Service(service, cluster, branch, type) {
-		const uri = `${this.apiUrl}/v2/${type}/${service.annotations[EnvApiClient.annotationServiceName]}`;
-		let query = { env: cluster, branch: branch };
-		let options = {
-			uri: uri,
-			qs: query,
-			headers: { 'X-Auth-Token': this.apiToken },
-			json: true,
-			timeout: this.timeout
-		};
-		return this.request(options).then( (response) => {
-			if (response.status && response.status === "error") {
-				const errMsg = this.convertErrorResponse(response);
-				throw new Error(errMsg);
-			}
-			return response;
-		});
-	}
-
 	/**
 	 * Converts the returned results from the env-api service into the expected format.
 	 */
-	convertK8sResult(config, result) {
-		if (config.values && typeof config.values === 'object') {
-			let props = config.values;
-			Object.keys(props).forEach( (key) => {
-				result[key] = props[key];
+	convertK8sResult(k8s, result) {
+		if (k8s && typeof k8s === 'object') {
+			Object.keys(k8s).forEach( (key) => {
+				result[key] = k8s[key];
 			});
 		}
 		return result;
@@ -217,13 +205,13 @@ class EnvApiClient {
 	/**
 	 * Converts the returned results from the env-api service into the expected format.
 	 */
-	convertEnvResult(config, result) {
+	convertEnvResult(values, result) {
 		result.env = []
-		if ( config.values ) {
-			Object.keys(config.values).forEach( (key) => {
+		if ( values ) {
+			Object.keys(values).forEach( (key) => {
 				result.env.push({
 					name: key,
-					value: config.values[key]
+					value: values[key]
 				});
 			});
 		}
