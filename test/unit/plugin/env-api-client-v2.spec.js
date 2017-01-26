@@ -3,6 +3,7 @@
 var expect = require("chai").expect;
 const Promise = require("bluebird");
 const sinon = require("sinon");
+const ClusterDefinition = require("../../../src/lib/cluster-definition");
 
 describe("ENV API Client Configuration plugin", () =>  {
 
@@ -58,6 +59,34 @@ describe("ENV API Client Configuration plugin", () =>  {
 
 	describe("Client calls", () =>  {
 
+		const cluster = {kind: "ClusterNamespace", metadata: {name: "example-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
+		const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
+		const clusterDef = new ClusterDefinition(cluster, config);
+
+		it("should fail with error", (done) => {
+			Promise.coroutine(function* () {
+				const options = {
+					apiUrl: "https://envapi.tools.shared-multi.k8s.invision.works/api",
+					supportFallback: true
+				};
+				const service = {
+					name: "mongo-init",
+					annotations: {
+						"kit-deploymentizer/env-api-service": "mongo-init",
+						"kit-deploymentizer/env-api-branch": "develop"
+					}
+				}
+				const ApiConfig = require("../../../src/plugin/env-api-client-v2");
+				const apiConfig = new ApiConfig(options);
+				const envs = yield apiConfig.fetch(service, "cluster-name");
+				done(new Error("Should have failed"));
+			})().catch( (err) => {
+				expect(err.message).to.exist;
+				expect(err.message).to.have.string("Invalid argument for 'cluster'");
+				done();
+			});
+		});
+
 		it("should only call request to env-api once, and convert values", (done) => {
 			Promise.coroutine(function* () {
 				const responseOne = new Promise( (resolve, reject) => {
@@ -99,7 +128,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 						"kit-deploymentizer/env-api-branch": "develop"
 					}
 				}
-				const envs = yield apiConfig.fetch(service, "example-cluster");
+				const envs = yield apiConfig.fetch(service, clusterDef);
 				expect(rp.callCount).to.equal(2);
 				let calledWith = rp.getCall(0);
 				// assert that the second call was to testing branch
@@ -159,7 +188,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 						"kit-deploymentizer/env-api-branch": "develop"
 					}
 				}
-				const envs = yield apiConfig.fetch(service, "example-cluster");
+				const envs = yield apiConfig.fetch(service, clusterDef);
 				// console.log("Resolved ENVS: %j", envs);
 				expect(rp.callCount).to.equal(2);
 				let calledWith = rp.getCall(1);
@@ -219,7 +248,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 						"kit-deploymentizer/env-api-branch": "develop"
 					}
 				}
-				const envs = yield apiConfig.fetch(service, "example-cluster");
+				const envs = yield apiConfig.fetch(service, clusterDef);
 				// console.log("Resolved ENVS: %j", envs);
 				expect(rp.callCount).to.equal(2);
 				expect(envs.branch).to.equal("testing");
@@ -265,7 +294,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 						"kit-deploymentizer/env-api-branch": "develop"
 					}
 				}
-				const envs = yield apiConfig.fetch(service, "example-cluster");
+				const envs = yield apiConfig.fetch(service, clusterDef);
 				done(new Error("should have throw error"));
 			})().catch( (err) => {
 				expect(err.message).to.exist;

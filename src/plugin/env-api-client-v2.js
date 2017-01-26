@@ -82,13 +82,16 @@ class EnvApiClient {
 				logger.warn(`No env-api-service annotation found for ${service.name}`);
 				return;
 			}
+			if (typeof cluster === "string") {
+				throw new Error("Invalid argument for 'cluster', requires cluster object not string.");
+			}
 
 			let branch = this.defaultBranch;
 
 			if (service.annotations[EnvApiClient.annotationBranchName]) {
 				branch = service.annotations[EnvApiClient.annotationBranchName]
 			}
-			let k8sResponse = yield this.callService(service, cluster, branch, "k8s");
+			let k8sResponse = yield this.callService(service, cluster.name(), branch, "k8s");
 
 			let result = {};
 			result = this.convertK8sResult(k8sResponse, result);
@@ -97,12 +100,12 @@ class EnvApiClient {
 				branch = result.branch;
 			}
 
-			let envResponse = yield this.callService(service, cluster, branch, "env");
+			let envResponse = yield this.callService(service, cluster.name(), branch, "env");
 			result = this.convertEnvResult(envResponse, result);
 			return result;
 
 		}).bind(this)().catch(function (err) {
-			logger.fatal(`Error calling env-api for ${service.name}/${cluster}:: ${JSON.stringify(err)}`);
+			logger.fatal(`Error calling env-api for ${service.name} :: ${JSON.stringify(err)}`);
 			let errMsg = err.message || err;
 			// API call failed, parse returned error message if possible...
 			if (err.response && err.response.body && err.response.body.status === "error") {

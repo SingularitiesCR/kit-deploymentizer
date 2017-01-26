@@ -3,6 +3,7 @@
 var expect = require("chai").expect;
 const Promise = require("bluebird");
 const sinon = require("sinon");
+const ClusterDefinition = require("../../../src/lib/cluster-definition");
 
 describe("ENV API Client Configuration plugin", () =>  {
 
@@ -28,9 +29,9 @@ describe("ENV API Client Configuration plugin", () =>  {
 
 		it("should fail with validation error", (done) => {
 			try {
-			const options = { api: "http://somehost/v1", Token: "SOME-TOKEN"}
-			const ApiConfig = require("../../../src/plugin/env-api-client");
-			const apiConfig = new ApiConfig(options);
+				const options = { api: "http://somehost/v1", Token: "SOME-TOKEN"}
+				const ApiConfig = require("../../../src/plugin/env-api-client");
+				const apiConfig = new ApiConfig(options);
 				done(new Error("Should have failed"));
 			} catch(err) {
 				done();
@@ -59,6 +60,27 @@ describe("ENV API Client Configuration plugin", () =>  {
 
 	describe("Client calls", () =>  {
 
+		it("should fail with error", (done) => {
+			Promise.coroutine(function* () {
+				const options = { apiUrl: "http://somehost/v1", Token: "SOME-TOKEN"}
+				const ApiConfig = require("../../../src/plugin/env-api-client");
+				const apiConfig = new ApiConfig(options);
+				const service = {
+					name: "mongo-init",
+					annotations: {
+						"kit-deploymentizer/env-api-service": "mongo-init",
+						"kit-deploymentizer/env-api-branch": "develop"
+					}
+				}
+				const envs = yield apiConfig.fetch(service, "cluster-name");
+				done(new Error("Should have failed"));
+			})().catch( (err) => {
+				expect(err.message).to.exist;
+				expect(err.message).to.have.string("Invalid argument for 'cluster'");
+				done();
+			});
+		});
+
 		it("should only call request to env-api once, and convert values", (done) => {
 			Promise.coroutine(function* () {
 				const responseOne = new Promise( (resolve, reject) => {
@@ -79,6 +101,11 @@ describe("ENV API Client Configuration plugin", () =>  {
 				var rp = sinon.stub();
 				rp.onFirstCall().returns(responseOne);
 					// .onSecondCall().returns(2);
+
+				const cluster = {kind: "ClusterNamespace", metadata: {name: "example-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
+				const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
+				const clusterDef = new ClusterDefinition(cluster, config);
+
 				const options = { apiUrl: "http://somehost/v1", apiToken: "SOME-TOKEN", k8sBranch: true };
 				const ApiConfig = require("../../../src/plugin/env-api-client");
 				const apiConfig = new ApiConfig(options);
@@ -91,7 +118,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 						"kit-deploymentizer/env-api-branch": "develop"
 					}
 				}
-				const envs = yield apiConfig.fetch(service, "example-cluster");
+				const envs = yield apiConfig.fetch(service, clusterDef);
 				// console.log("Resolved ENVS: %j", envs);
 				expect(rp.callCount).to.equal(1);
 				let calledWith = rp.getCall(0);
@@ -149,6 +176,10 @@ describe("ENV API Client Configuration plugin", () =>  {
 				const apiConfig = new ApiConfig(options);
 				apiConfig.request = rp;
 
+				const cluster = {kind: "ClusterNamespace", metadata: {name: "example-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
+				const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
+				const clusterDef = new ClusterDefinition(cluster, config);
+
 				const service = {
 					name: "mongo-init",
 					annotations: {
@@ -156,7 +187,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 						"kit-deploymentizer/env-api-branch": "develop"
 					}
 				}
-				const envs = yield apiConfig.fetch(service, "example-cluster");
+				const envs = yield apiConfig.fetch(service, clusterDef);
 				// console.log("Resolved ENVS: %j", envs);
 				expect(rp.callCount).to.equal(2);
 				let calledWith = rp.getCall(1);
@@ -200,6 +231,10 @@ describe("ENV API Client Configuration plugin", () =>  {
 				const apiConfig = new ApiConfig(options);
 				apiConfig.request = rp;
 
+				const cluster = {kind: "ClusterNamespace", metadata: {name: "example-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
+				const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
+				const clusterDef = new ClusterDefinition(cluster, config);
+
 				const service = {
 					name: "mongo-init",
 					annotations: {
@@ -207,7 +242,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 						"kit-deploymentizer/env-api-branch": "develop"
 					}
 				}
-				const envs = yield apiConfig.fetch(service, "example-cluster");
+				const envs = yield apiConfig.fetch(service, clusterDef);
 				// console.log("Resolved ENVS: %j", envs);
 				expect(rp.callCount).to.equal(1);
 				expect(envs.branch).to.equal("testing");

@@ -69,8 +69,11 @@ class EnvApiClient {
 				logger.warn(`No env-api-service annotation found for ${service.name}`);
 				return;
 			}
+			if (typeof cluster === "string") {
+				throw new Error("Invalid argument for 'cluster', requires cluster object not string.");
+			}
 			const uri = `${this.apiUrl}/${service.annotations[EnvApiClient.annotationServiceName]}`;
-			let query = { env: cluster };
+			let query = { env: cluster.name() };
 			// if a branch is specified pass that along
 			if (service.annotations || service.annotations[EnvApiClient.annotationBranchName]) {
 				query.branch = service.annotations[EnvApiClient.annotationBranchName]

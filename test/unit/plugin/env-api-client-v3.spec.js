@@ -104,6 +104,22 @@ describe("ENV API Client Configuration plugin", () =>  {
 			delete process.env.ENVAPI_ACCESS_TOKEN;
 		});
 
+		it("should fail with error", (done) => {
+			Promise.coroutine(function* () {
+				const options = {
+					apiUrl: "https://envapi.tools.shared-multi.k8s.invision.works/api",
+					supportFallback: true
+				};
+				const apiConfig = new ApiConfig(options);
+				const envs = yield apiConfig.fetch(testrosieService, "cluster-name");
+				done(new Error("Should have failed"));
+			})().catch( (err) => {
+				expect(err.message).to.exist;
+				expect(err.message).to.have.string("Invalid argument for 'cluster'");
+				done();
+			});
+		});
+
 		it("should call request to v3 and succeed", (done) => {
 			Promise.coroutine(function* () {
 				var rp = sinon.stub();

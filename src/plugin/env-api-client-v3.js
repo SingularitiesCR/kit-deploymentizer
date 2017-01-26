@@ -82,6 +82,9 @@ class EnvApiClient {
 				logger.warn(`No env-api-service annotation found for ${service.name}`);
 				return;
 			}
+			if (typeof cluster === "string") {
+				throw new Error("Invalid argument for 'cluster', requires cluster object not string.");
+			}
 
 			let params = {
 				service: service.annotations[EnvApiClient.annotationServiceName],
