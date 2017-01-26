@@ -56,27 +56,18 @@ describe("ENV API Client Configuration plugin", () =>  {
 				"message":"404 - {\"message\":\"Unable to fetch 'in-config.yaml' from 'node-test-rosie' repo, branch 'master': GET https://api.github.com/repos/InvisionApp/node-test-rosie/contents/in-config.yaml?ref=master: 404 Not Found []\",\"status\":\"error\"}"
 			});
 		});
-		const resV2K8s = new Promise( (resolve, reject) => {
-			resolve(
-			{
-				"status": "success",
-				"message": "fetched env",
-				"values": {
-					"branch": "develop"
-				}
-			});
-		});
 		const resV2Env = new Promise( (resolve, reject) => {
 			resolve(
 			{
-				"status": "success",
-				"message": "fetched env",
-				"values": {
+				"env": {
 					"GET_HOSTS_FROM": "dns",
 					"MAX_RETRIES": "0",
 					"MEMBER_HOSTS": "mongoreplica-01-svc:27017,mongoreplica-02-svc:27017,mongoreplica-03-svc:27017",
 					"REPLICA_SET_NAME": "rs0",
 					"WAIT_TIME": "60000"
+				},
+				"k8s": {
+					"branch": "develop"
 				}
 			});
 		});
@@ -153,12 +144,11 @@ describe("ENV API Client Configuration plugin", () =>  {
 
 		});
 
-		it("should call request to v3 and fallback to v2", (done) => {
+		it("should call request to v3 and fallback to v1", (done) => {
 			Promise.coroutine(function* () {
 				var rp = sinon.stub();
 				rp.onFirstCall().returns(resV3Invalid);
-				rp.onSecondCall().returns(resV2K8s);
-				rp.onThirdCall().returns(resV2Env);
+				rp.onSecondCall().returns(resV2Env);
 				const cluster = {kind: "ClusterNamespace", metadata: {name: "staging-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
 				const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
 				const clusterDef = new ClusterDefinition(cluster, config);
@@ -172,7 +162,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 
 				let envs;
 				envs = yield apiConfig.fetch(testService, clusterDef);
-				expect(rp.callCount).to.equal(3);
+				expect(rp.callCount).to.equal(2);
 
 				expect(envs.env.length).to.equal(5);
 				expect(envs.env[0].name).to.equal("GET_HOSTS_FROM");
@@ -192,8 +182,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 			Promise.coroutine(function* () {
 				var rp = sinon.stub();
 				rp.onFirstCall().returns(resV3Invalid);
-				rp.onSecondCall().returns(resV2K8s);
-				rp.onThirdCall().returns(resV2Env);
+				rp.onSecondCall().returns(resV2Env);
 				const cluster = {kind: "ClusterNamespace", metadata: {name: "staging-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
 				const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
 				const clusterDef = new ClusterDefinition(cluster, config);
