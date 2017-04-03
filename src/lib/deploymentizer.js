@@ -10,6 +10,7 @@ const PluginHandler = require("../util/plugin-handler");
 const logger = require("log4js").getLogger();
 const fse = require("fs-extra");
 const fseRemove = Promise.promisify(fse.remove);
+const request = require("request-promise");
 
 logger.setLevel((process.env.DEBUG === "true" ? "DEBUG" : "ERROR"));
 
@@ -34,6 +35,8 @@ class Deploymentizer {
 			type: undefined
 		}
 		this.options = {
+				elroyUrl: (args.elroyUrl || null),
+				elroySecret: (args.elroySecret || null),
 				clean: (args.clean || false),
 				save: (args.save || false),
 				workdir: (args.workdir || ""),
@@ -81,6 +84,9 @@ class Deploymentizer {
 			let processClusters = [];
 			for (let i=0; i < clusterDefs.length; i++) {
 				processClusters.push(this.processClusterDef( clusterDefs[i], typeDefinitions, baseClusterDef, imageResources, configPlugin ));
+				if (this.options.elroyUrl && this.options.elroySecret) {
+					processClusters.push(this.saveToElroy(clusterDefs[i]));
+				}
 			};
 			yield Promise.all(processClusters);
 			this.events.emitInfo(`Finished processing files...` );
@@ -154,6 +160,42 @@ class Deploymentizer {
 																				this.events);
 				return generator.process();
 			}
+		});
+	}
+	
+	/**
+	 * Saves the given cluster defination to an external Elroy instance. Returns a promise that is resolved on success.
+	 *
+	 * @param {[type]} def          Cluster Definition
+	 */
+	saveToElroy(def) {
+		return Promise.try(() => {
+			this.events.emitInfo(`Saving Cluster ${def.metadata.name} to Elroy...`);
+			// Format for elroy
+			const cluster = {
+				name: def.cluster.metadata.name,
+				tier: def.cluster.metadata.type,
+				active: (def.cluster.metadata.active || true), // Clusters are active by default
+				metadata: {
+					type: (def.cluster.metadata.type || null),
+					environment: (def.cluster.metadata.environment || null),
+					domain: (def.cluster.metadata.domain || null),
+					company: (def.cluster.metadata.company || null)
+				},
+				kubernetes: {
+					cluster: def.cluster.metadata.cluster,
+					namespace: def.cluster.metadata.namespace,
+					ingress: (def["ingress-controller"] || null)
+				},
+				resources: (def.cluster.resources || [])
+			};
+			// TODO: add use of elroy secret for API request
+			return request({
+				method: "POST",
+				uri: this.options.elroyUrl,
+				body: cluster,
+				json: true
+			});
 		});
 	}
 }

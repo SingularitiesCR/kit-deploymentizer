@@ -4,12 +4,28 @@ const expect = require("chai").expect;
 const os = require("os");
 const path = require("path");
 const fse = require("fs-extra");
-const Deploymentizer = require("../../../src/lib/deploymentizer");
-const yamlHandler = require("../../../src/util/yaml-handler");
-const resourceHandler = require("../../../src/util/resource-handler");
 const Promise = require("bluebird");
+const mockery = require("mockery");
+
+let Deploymentizer, yamlHandler, resourceHandler;
 
 describe("Deploymentizer", () => {
+	before(function(done) {
+		mockery.enable({
+			warnOnReplace: false,
+			warnOnUnregistered: false,
+			useCleanCache: true
+		});
+
+		mockery.registerMock("request-promise", function(opt) {
+			expect(opt.body.name).not.to.be.empty;
+			return Promise.resolve();
+		});
+		Deploymentizer = require("../../../src/lib/deploymentizer");
+		yamlHandler = require("../../../src/util/yaml-handler");
+		resourceHandler = require("../../../src/util/resource-handler");
+		done();
+	});
 	describe("generate files", () => {
 		it("should run successfully", (done) => {
 
@@ -21,10 +37,12 @@ describe("Deploymentizer", () => {
 
 				const conf = yield yamlHandler.loadFile("/test/fixture/kit.yaml");
 				const deployer = new Deploymentizer ({
-						clean: true,
-						save: true,
-						conf: conf
-					});
+					elroyUrl: "http://elroy-svc.tools.svc.cluster.local/",
+					elroySecret: "123abc",
+					clean: true,
+					save: true,
+					conf: conf
+				});
 				// multiple events will get fired for failure cluster.
 				deployer.events.on(deployer.events.WARN, function(message) {
 					console.log("WARN::::" + message);
@@ -89,10 +107,12 @@ describe("Deploymentizer", () => {
 				delete conf.plugin;
 
 				const deployer = new Deploymentizer ({
-						clean: true,
-						save: true,
-						conf: conf
-					});
+					elroyUrl: "http://elroy-svc.tools.svc.cluster.local/",
+					elroySecret: "123abc",
+					clean: true,
+					save: true,
+					conf: conf
+				});
 				expect(deployer).to.exist;
 				// generate the files from our test fixtures
 				yield deployer.process();
@@ -132,11 +152,13 @@ describe("Deploymentizer", () => {
 				delete conf.plugin;
 
 				const deployer = new Deploymentizer ({
-						clean: true,
-						save: true,
-						conf: conf,
-						resource: "activity"
-					});
+					elroyUrl: "http://elroy-svc.tools.svc.cluster.local/",
+					elroySecret: "123abc",
+					clean: true,
+					save: true,
+					conf: conf,
+					resource: "activity"
+				});
 				expect(deployer).to.exist;
 				// generate the files from our test fixtures
 				yield deployer.process();
@@ -165,10 +187,12 @@ describe("Deploymentizer", () => {
 				let conf = yield yamlHandler.loadFile("/test/fixture/kit.yaml");
 
 				const deployer = new Deploymentizer ({
-						clean: true,
-						save: true,
-						conf: conf
-					});
+					elroyUrl: "http://elroy-svc.tools.svc.cluster.local/",
+					elroySecret: "123abc",
+					clean: true,
+					save: true,
+					conf: conf
+				});
 				expect(deployer).to.exist;
 				// generate the files from our test fixtures
 				yield deployer.process();
@@ -193,11 +217,13 @@ describe("Deploymentizer", () => {
 				let conf = yield yamlHandler.loadFile("/test/fixture/kit.yaml");
 
 				const deployer = new Deploymentizer ({
-						clean: true,
-						save: true,
-						conf: conf,
-						clusterType: "test"
-					});
+					elroyUrl: "http://elroy-svc.tools.svc.cluster.local/",
+					elroySecret: "123abc",
+					clean: true,
+					save: true,
+					conf: conf,
+					clusterType: "test"
+				});
 				expect(deployer).to.exist;
 				// generate the files from our test fixtures
 				yield deployer.process();
@@ -220,5 +246,11 @@ describe("Deploymentizer", () => {
 			});
 		});
 
+	});
+
+	after(function(done) {
+		mockery.disable();
+		mockery.deregisterAll();
+		done();
 	});
 });
