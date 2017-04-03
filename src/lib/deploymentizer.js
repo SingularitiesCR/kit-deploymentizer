@@ -189,10 +189,12 @@ class Deploymentizer {
 				},
 				resources: (def.cluster.resources || [])
 			};
-			// TODO: add use of elroy secret for API request
 			return request({
 				method: "POST",
 				uri: this.options.elroyUrl,
+				headers: {
+					"X-Auth-Token": this.options.elroySecret
+				},
 				body: cluster,
 				json: true
 			});

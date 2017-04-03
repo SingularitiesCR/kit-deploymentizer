@@ -19,6 +19,7 @@ describe("Deploymentizer", () => {
 
 		mockery.registerMock("request-promise", function(opt) {
 			expect(opt.body.name).not.to.be.empty;
+			expect(opt.headers["X-Auth-Token"]).not.to.be.empty;
 			return Promise.resolve();
 		});
 		Deploymentizer = require("../../../src/lib/deploymentizer");
