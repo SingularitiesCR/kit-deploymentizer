@@ -11,6 +11,7 @@ const logger = require("log4js").getLogger();
 const fse = require("fs-extra");
 const fseRemove = Promise.promisify(fse.remove);
 const request = require("request-promise");
+const errors = require("request-promise/errors");
 
 logger.setLevel((process.env.DEBUG === "true" ? "DEBUG" : "ERROR"));
 
@@ -190,6 +191,7 @@ class Deploymentizer {
 				resources: (def.cluster.resources || [])
 			};
 			return request({
+				simple: true,
 				method: "POST",
 				uri: this.options.elroyUrl + "/api/v1/deployment-environment/" + def.cluster.metadata.name,
 				headers: {
@@ -197,17 +199,20 @@ class Deploymentizer {
 				},
 				body: cluster,
 				json: true
-			}).catch(() => {
-				// POST failed (probably because it already exists), try doing an update
-				return request({
-					method: "PUT",
-					uri: this.options.elroyUrl + "/api/v1/deployment-environment/" + def.cluster.metadata.name,
-					headers: {
-						"X-Auth-Token": this.options.elroySecret
-					},
-					body: cluster,
-					json: true
-				});
+			}).catch(errors.StatusCodeError, function (reason) {
+				// If error is because it already exists, lets do an update
+				if (reason.response.statusCode == 409) {
+					return request({
+						method: "PUT",
+						uri: this.options.elroyUrl + "/api/v1/deployment-environment/" + def.cluster.metadata.name,
+						headers: {
+							"X-Auth-Token": this.options.elroySecret
+						},
+						body: cluster,
+						json: true
+					});
+				}
+				return null;
 			});
 		});
 	}
