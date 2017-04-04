@@ -197,6 +197,17 @@ class Deploymentizer {
 				},
 				body: cluster,
 				json: true
+			}).catch(() => {
+				// POST failed (probably because it already exists), try doing an update
+				return request({
+					method: "PUT",
+					uri: this.options.elroyUrl + "/api/v1/deployment-environment/" + def.cluster.metadata.name,
+					headers: {
+						"X-Auth-Token": this.options.elroySecret
+					},
+					body: cluster,
+					json: true
+				});
 			});
 		});
 	}
