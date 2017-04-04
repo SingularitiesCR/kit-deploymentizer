@@ -86,11 +86,22 @@ class EnvApiClient {
 				throw new Error("Invalid argument for 'cluster', requires cluster object not string.");
 			}
 
+			// Clean metadata so it does not have any booleans before we pass to envapi (booleans cause errors)
+			const rawMetadata = cluster.metadata();
+			const metadata = {};
+			for (const key in rawMetadata) {
+				if (typeof(rawMetadata[key]) == "boolean") {
+					metadata[key] = (rawMetadata[key]) ? "true" : "false";
+				} else {
+					metadata[key] = rawMetadata[key];
+				}
+			}
+
 			let params = {
 				service: service.annotations[EnvApiClient.annotationServiceName],
 				environment: cluster.metadata().environment,
 				cluster: cluster.name(),
-				metadata: cluster.metadata()
+				metadata: metadata
 			}
 			return this.callv3Api(params).then( (res) => {
 				if (res.status && res.status === "success") {
