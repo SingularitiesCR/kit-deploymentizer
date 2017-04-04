@@ -90,8 +90,8 @@ class EnvApiClient {
 			const rawMetadata = cluster.metadata();
 			const metadata = {};
 			for (const key in rawMetadata) {
-				if (typeof(rawMetadata[key]) == "boolean") {
-					metadata[key] = (rawMetadata[key]) ? "true" : "false";
+				if (rawMetadata[key] && typeof(rawMetadata[key].toString) == "function") {
+					metadata[key] = rawMetadata[key].toString();
 				} else {
 					metadata[key] = rawMetadata[key];
 				}
