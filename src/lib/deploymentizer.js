@@ -193,7 +193,7 @@ class Deploymentizer {
 			return request({
 				simple: true,
 				method: "POST",
-				uri: this.options.elroyUrl + "/api/v1/deployment-environment/" + def.cluster.metadata.name,
+				uri: this.options.elroyUrl + "/api/v1/deployment-environment",
 				headers: {
 					"X-Auth-Token": this.options.elroySecret
 				},
