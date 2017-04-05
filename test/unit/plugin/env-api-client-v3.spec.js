@@ -115,7 +115,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 			Promise.coroutine(function* () {
 				var rp = sinon.stub();
 				rp.onFirstCall().returns(resV3Valid);
-				const cluster = {kind: "ClusterNamespace", metadata: {name: "staging-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
+				const cluster = {kind: "ClusterNamespace", metadata: {name: "staging-cluster", type: "staging", environment: "staging", domain:"somewbesite.com", restricted: true} };
 				const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
 				const clusterDef = new ClusterDefinition(cluster, config);
 
@@ -149,7 +149,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 				var rp = sinon.stub();
 				rp.onFirstCall().returns(resV3Invalid);
 				rp.onSecondCall().returns(resV2Env);
-				const cluster = {kind: "ClusterNamespace", metadata: {name: "staging-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
+				const cluster = {kind: "ClusterNamespace", metadata: {name: "staging-cluster", type: "staging", environment: "staging", domain:"somewbesite.com", restricted: true} };
 				const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
 				const clusterDef = new ClusterDefinition(cluster, config);
 
@@ -183,7 +183,7 @@ describe("ENV API Client Configuration plugin", () =>  {
 				var rp = sinon.stub();
 				rp.onFirstCall().returns(resV3Invalid);
 				rp.onSecondCall().returns(resV2Env);
-				const cluster = {kind: "ClusterNamespace", metadata: {name: "staging-cluster", type: "staging", environment: "staging", domain:"somewbesite.com"} };
+				const cluster = {kind: "ClusterNamespace", metadata: {name: "staging-cluster", type: "staging", environment: "staging", domain:"somewbesite.com", restricted: true} };
 				const config = {kind: "ResourceConfig", env: [{name: "a", value: 1}, {name: "b", value: 2}]};
 				const clusterDef = new ClusterDefinition(cluster, config);
 
