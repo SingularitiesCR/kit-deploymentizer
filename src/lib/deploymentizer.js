@@ -188,7 +188,8 @@ class Deploymentizer {
 					type: (def.cluster.metadata.type || null),
 					environment: (def.cluster.metadata.environment || null),
 					domain: (def.cluster.metadata.domain || null),
-					company: (def.cluster.metadata.company || null)
+					company: (def.cluster.metadata.company || null),
+					restricted: (def.cluster.metadata.restricted || null)
 				},
 				kubernetes: {
 					cluster: def.cluster.metadata.cluster,
