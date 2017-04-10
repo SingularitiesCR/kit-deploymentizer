@@ -125,7 +125,7 @@ class Deploymentizer {
 	 * @param  {[type]} imageResources  ImageResource Map
 	 */
 	processClusterDef(def, typeDefinitions, baseClusterDef, imageResources, configPlugin) {
-		return Promise.coroutine(function* () {
+		return Promise.try(() => {
 			if (def.type()) {
 				if (this.options.clusterType != undefined && this.options.clusterType !== def.type()) {
 					this.events.emitDebug(`Only processing cluster type ${this.options.clusterType}, cluster ${def.name()} is ${def.type()}, skipping...` );
@@ -141,14 +141,17 @@ class Deploymentizer {
 			}
 			// Merge with the Base Definitions.
 			def.apply(baseClusterDef);
+			let elroyProm;
 			if (this.options.elroyUrl && this.options.elroySecret) {
-				yield this.saveToElroy(def);
+				elroyProm = this.saveToElroy(def);
+			} else {
+				elroyProm = Promise.Resolve;
 			}
 			this.events.emitDebug("Done Merging Cluster Definitions");
 			// Only process if the cluster isn't disabled or elroyOnly is false
 			if (def.disabled() || this.options.elroyOnly) {
 				this.events.emitInfo(`Cluster ${def.name()} is disabled, skipping...`);
-				return;
+				return elroyProm;
 			} else {
 				// apply the correct image tag based on cluster type or resource type
 				// generating the templates for each resource (if not disabled), using custom ENVs and envs from resource tags.
@@ -160,7 +163,7 @@ class Deploymentizer {
 																				configPlugin,
 																				this.options.resource,
 																				this.events);
-				return generator.process();
+				return Promise.all([elroyProm, generator.process()]);
 			};
 		});
 	}
