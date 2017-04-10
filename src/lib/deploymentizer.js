@@ -84,12 +84,7 @@ class Deploymentizer {
 			//Merge the definitions, render templates and save (if enabled)
 			let processClusters = [];
 			for (let i=0; i < clusterDefs.length; i++) {
-				if (!this.options.elroyOnly) {
-					processClusters.push(this.processClusterDef(clusterDefs[i], typeDefinitions, baseClusterDef, imageResources, configPlugin));
-				}
-				if (this.options.elroyUrl && this.options.elroySecret) {
-					processClusters.push(this.saveToElroy(clusterDefs[i]));
-				}
+				processClusters.push(this.processClusterDef(clusterDefs[i], typeDefinitions, baseClusterDef, imageResources, configPlugin));
 			};
 			yield Promise.all(processClusters);
 			this.events.emitInfo(`Finished processing files...` );
@@ -130,7 +125,7 @@ class Deploymentizer {
 	 * @param  {[type]} imageResources  ImageResource Map
 	 */
 	processClusterDef(def, typeDefinitions, baseClusterDef, imageResources, configPlugin) {
-		return Promise.try( () => {
+		return Promise.coroutine(function* () {
 			if (def.type()) {
 				if (this.options.clusterType != undefined && this.options.clusterType !== def.type()) {
 					this.events.emitDebug(`Only processing cluster type ${this.options.clusterType}, cluster ${def.name()} is ${def.type()}, skipping...` );
@@ -146,8 +141,12 @@ class Deploymentizer {
 			}
 			// Merge with the Base Definitions.
 			def.apply(baseClusterDef);
+			if (this.options.elroyUrl && this.options.elroySecret) {
+				yield this.saveToElroy(def);
+			}
 			this.events.emitDebug("Done Merging Cluster Definitions");
-			if (def.disabled()) {
+			// Only process if the cluster isn't disabled or elroyOnly is false
+			if (def.disabled() || this.options.elroyOnly) {
 				this.events.emitInfo(`Cluster ${def.name()} is disabled, skipping...`);
 				return;
 			} else {
@@ -162,7 +161,7 @@ class Deploymentizer {
 																				this.options.resource,
 																				this.events);
 				return generator.process();
-			}
+			};
 		});
 	}
 	
