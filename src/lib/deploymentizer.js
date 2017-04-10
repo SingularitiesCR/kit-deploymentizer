@@ -34,21 +34,21 @@ class Deploymentizer {
 			cluster: undefined,
 			images: undefined,
 			type: undefined
-		}
+		};
 		this.options = {
-				elroyUrl: (args.elroyUrl || null),
-				elroySecret: (args.elroySecret || null),
-				clean: (args.clean || false),
-				save: (args.save || false),
-				workdir: (args.workdir || ""),
-				configPlugin: undefined,
-				conf: undefined,
-				resource: (args.resource || undefined),
-				clusterType: (args.clusterType || undefined)
-			}
+			elroyOnly: (args.elroyOnly || false),
+			elroyUrl: (args.elroyUrl || null),
+			elroySecret: (args.elroySecret || null),
+			clean: (args.clean || false),
+			save: (args.save || false),
+			workdir: (args.workdir || ""),
+			configPlugin: undefined,
+			conf: undefined,
+			resource: (args.resource || undefined),
+			clusterType: (args.clusterType || undefined)
+		};
 		this.options.conf = this.parseConf(args.conf);
 		this.events = new EventHandler();
-;
 	}
 
 	/**
