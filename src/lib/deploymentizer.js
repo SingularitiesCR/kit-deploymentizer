@@ -209,7 +209,6 @@ class Deploymentizer {
 				json: true
 			})
 			.then((res) => {
-				this.events.emitDebug(res.statusCode);
 				this.events.emitDebug(`Successfully added Cluster ${cluster.name} to Elroy`);
 				return res;
 			})
