@@ -63,6 +63,11 @@ program
 	.parse(process.argv)
 ;
 
+if (program.debug) {
+	// Have to enable this BEFORE any promises are created
+	Promise.longStackTraces();
+}
+
 loadConf(program.conf).then( (conf) => {
 	const deploymentizer = new Deploymentizer({
 		elroyOnly: program.elroyOnly,
@@ -98,8 +103,12 @@ loadConf(program.conf).then( (conf) => {
 			exit(0);
 		})
 		.catch(function(err) {
-			logger.fatal(err.message || err);
-			throw new Error(err);
+			if (err.stack) {
+				logger.fatal(err.stack);
+			} else {
+				logger.fatal(err.message || err);
+			}
+			exit(1);
 		})
 		.done();
 });

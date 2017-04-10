@@ -81,6 +81,10 @@ class Deploymentizer {
 			// Load the /cluster 'cluster.yaml' and 'configuration-var.yaml'
 			const clusterDefs = yield yamlHandler.loadClusterDefinitions(this.paths.cluster);
 
+			if (this.options.elroyUrl && this.options.elroySecret) {
+				this.events.emitInfo(`Saving to elroy is enabled`);
+			}
+
 			//Merge the definitions, render templates and save (if enabled)
 			let processClusters = [];
 			for (let i=0; i < clusterDefs.length; i++) {
@@ -147,7 +151,7 @@ class Deploymentizer {
 			} else {
 				elroyProm = Promise.Resolve;
 			}
-			this.events.emitDebug("Done Merging Cluster Definitions");
+			this.events.emitDebug(`Done merging cluster definitions for ${def.name()}`);
 			// Only process if the cluster isn't disabled or elroyOnly is false
 			if (def.disabled() || this.options.elroyOnly) {
 				this.events.emitInfo(`Cluster ${def.name()} is disabled, skipping...`);
@@ -175,7 +179,6 @@ class Deploymentizer {
 	 */
 	saveToElroy(def) {
 		return Promise.try(() => {
-			this.events.emitInfo(`Saving Cluster ${def.metadata.name} to Elroy...`);
 			// Format for elroy
 			const cluster = {
 				name: def.cluster.metadata.name,
@@ -194,6 +197,7 @@ class Deploymentizer {
 				},
 				resources: (def.cluster.resources || [])
 			};
+			this.events.emitDebug(`Saving Cluster ${cluster.name} to Elroy...`);
 			return request({
 				simple: true,
 				method: "POST",
@@ -203,20 +207,35 @@ class Deploymentizer {
 				},
 				body: cluster,
 				json: true
-			}).catch(errors.StatusCodeError, function (reason) {
+			})
+			.then((res) => {
+				this.events.emitDebug(res.statusCode);
+				this.events.emitDebug(`Successfully added Cluster ${cluster.name} to Elroy`);
+				return res;
+			})
+			.catch(errors.StatusCodeError, (reason) => {
 				// If error is because it already exists, lets do an update
 				if (reason.response.statusCode == 409) {
 					return request({
 						method: "PUT",
-						uri: this.options.elroyUrl + "/api/v1/deployment-environment/" + def.cluster.metadata.name,
+						uri: this.options.elroyUrl + "/api/v1/deployment-environment/" + cluster.name,
 						headers: {
 							"X-Auth-Token": this.options.elroySecret
 						},
 						body: cluster,
 						json: true
+					})
+					.then((res) => {
+						this.events.emitDebug(`Successfully updated Cluster ${cluster.name} to Elroy`);
+						return res;
+					})
+					.catch((updateReason) => {
+						this.events.emitWarn(`Error updating Cluster ${cluster.name} to Elroy: ${updateReason}`);
+						throw updateReason;
 					});
 				}
-				return null;
+				this.events.emitWarn(`Error adding Cluster ${cluster.name} to Elroy: ${reason}`);
+				throw reason;
 			});
 		});
 	}
