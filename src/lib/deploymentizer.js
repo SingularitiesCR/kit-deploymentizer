@@ -84,7 +84,9 @@ class Deploymentizer {
 			//Merge the definitions, render templates and save (if enabled)
 			let processClusters = [];
 			for (let i=0; i < clusterDefs.length; i++) {
-				processClusters.push(this.processClusterDef( clusterDefs[i], typeDefinitions, baseClusterDef, imageResources, configPlugin ));
+				if (!this.options.elroyOnly) {
+					processClusters.push(this.processClusterDef(clusterDefs[i], typeDefinitions, baseClusterDef, imageResources, configPlugin));
+				}
 				if (this.options.elroyUrl && this.options.elroySecret) {
 					processClusters.push(this.saveToElroy(clusterDefs[i]));
 				}
