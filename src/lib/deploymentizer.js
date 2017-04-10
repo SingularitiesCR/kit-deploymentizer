@@ -195,8 +195,16 @@ class Deploymentizer {
 					namespace: def.cluster.metadata.namespace,
 					ingress: (def["ingress-controller"] || null)
 				},
-				resources: (def.cluster.resources || [])
+				resources: {}
 			};
+			// Populate resources in new format
+			_.each(def.cluster.resources, (resource, name) => {
+				cluster.resources[name] = {
+					sha: "",
+					deploymentId: "",
+					config: null
+				};
+			});
 			this.events.emitDebug(`Saving Cluster ${cluster.name} to Elroy...`);
 			return request({
 				simple: true,
