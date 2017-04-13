@@ -443,7 +443,8 @@ The following environment variables are used by this service.
 | `CONF` | Sets the path the config file to load | yes | `/manifests/kit.yaml` |
 | `WORKDIR` | Sets the working directory for reading paths defined in the conf file. Allows absolute paths in conf also. | no | `` |
 | `RESOURCE` | Defines specific resource to generate. If not set, generates all resources. | no | `` |
-| `CLUSTER_TYPE` | Defines the cluster type to process (testing, production, etc). If not defined processes all clusters found  | no | `` |
+| `CLUSTER_TYPE` | Defines the cluster type to process (testing, production, etc). If not defined processes all clusters found. You cannot define both CLUSTER_TYPE and CLUSTER_NAME at the same time.  | no | `` |
+| `CLUSTER_NAME` | Defines the cluster name to process. If not defined processes all clusters found. You cannot define both CLUSTER_TYPE and CLUSTER_NAME at the same time.  | no | `` |
 | `DEBUG` | Log debug events | no | `false` |
 
 ## Contributing

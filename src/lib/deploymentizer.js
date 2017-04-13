@@ -45,7 +45,8 @@ class Deploymentizer {
 			configPlugin: undefined,
 			conf: undefined,
 			resource: (args.resource || undefined),
-			clusterType: (args.clusterType || undefined)
+			clusterType: (args.clusterType || undefined),
+			clusterName: (args.clusterName || undefined)
 		};
 		this.options.conf = this.parseConf(args.conf);
 		this.events = new EventHandler();
@@ -58,7 +59,15 @@ class Deploymentizer {
 	process() {
 		return Promise.coroutine(function* () {
 
-			this.events.emitInfo(`Running for cluster ${this.options.clusterType} and resource ${this.options.resource || "all"}`);
+			if (this.options.clusterName && this.options.clusterType) {
+				throw new Error("You cannot set both clusterName and clusterType at the same time");
+			}
+
+			if (this.options.clusterName) {
+				this.events.emitInfo(`Running for cluster ${this.options.clusterName} and resource ${this.options.resource || "all"}`);
+			} else {
+				this.events.emitInfo(`Running for type ${this.options.clusterType} and resource ${this.options.resource || "all"}`);
+			}
 
 			if (this.options.clean) {
 				this.events.emitDebug(`Cleaning: ${path.join(this.paths.output, "/*")}`);
@@ -132,7 +141,11 @@ class Deploymentizer {
 		return Promise.try(() => {
 			if (def.type()) {
 				if (this.options.clusterType != undefined && this.options.clusterType !== def.type()) {
-					this.events.emitDebug(`Only processing cluster type ${this.options.clusterType}, cluster ${def.name()} is ${def.type()}, skipping...` );
+					this.events.emitDebug(`Only processing type ${this.options.clusterType}, cluster ${def.name()} is ${def.type()}, skipping...` );
+					return;
+				}
+				if (this.options.clusterName != undefined && this.options.clusterName !== def.name()) {
+					this.events.emitDebug(`Only processing name ${this.options.clusterName}, skipping cluster ${def.name()}...` );
 					return;
 				}
 				const type = typeDefinitions[def.type()];
