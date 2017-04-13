@@ -42,7 +42,7 @@ const loadConf = function(confPath) {
 			throw new Error("No Configuration file found");
 		}
 	})();
-}
+};
 /**
  * Most values should be set in the conf file, with the exception of --clean and --save
  * At least --conf flags must be set.
@@ -57,11 +57,22 @@ program
 	.option("-d, --debug <boolean>", "Sets debug flag", parseBoolean, parseBoolean(process.env.DEBUG))
 	.option("-r, --resource <string>", "Sets the resource to generate", process.env.RESOURCE)
 	.option("-t, --clusterType <string>", "Sets the cluster type to generate", process.env.CLUSTER_TYPE)
+	.option("--elroyOnly <boolean>", "When enabled it will only generate what it needs to do an Elroy update", parseBoolean, parseBoolean(process.env.ELROY_ONLY))
+	.option("--elroyUrl <string>", "Set to an Elroy URL where you want the generated cluster information sent", process.env.ELROY_URL)
+	.option("--elroySecret <string>", "The secret to use when making an Elroy API request", process.env.ELROY_SECRET)
 	.parse(process.argv)
 ;
 
+if (program.debug) {
+	// Have to enable this BEFORE any promises are created
+	Promise.longStackTraces();
+}
+
 loadConf(program.conf).then( (conf) => {
 	const deploymentizer = new Deploymentizer({
+		elroyOnly: program.elroyOnly,
+		elroyUrl: program.elroyUrl,
+		elroySecret: program.elroySecret,
 		clean: program.clean,
 		save: program.save,
 		workdir: program.workdir,
@@ -92,8 +103,12 @@ loadConf(program.conf).then( (conf) => {
 			exit(0);
 		})
 		.catch(function(err) {
-			logger.fatal(err.message || err);
-			throw new Error(err);
+			if (err.stack) {
+				logger.fatal(err.stack);
+			} else {
+				logger.fatal(err.message || err);
+			}
+			exit(1);
 		})
 		.done();
 });

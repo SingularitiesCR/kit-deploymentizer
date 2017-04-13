@@ -10,6 +10,8 @@ const PluginHandler = require("../util/plugin-handler");
 const logger = require("log4js").getLogger();
 const fse = require("fs-extra");
 const fseRemove = Promise.promisify(fse.remove);
+const request = require("request-promise");
+const errors = require("request-promise/errors");
 
 logger.setLevel((process.env.DEBUG === "true" ? "DEBUG" : "ERROR"));
 
@@ -32,19 +34,21 @@ class Deploymentizer {
 			cluster: undefined,
 			images: undefined,
 			type: undefined
-		}
+		};
 		this.options = {
-				clean: (args.clean || false),
-				save: (args.save || false),
-				workdir: (args.workdir || ""),
-				configPlugin: undefined,
-				conf: undefined,
-				resource: (args.resource || undefined),
-				clusterType: (args.clusterType || undefined)
-			}
+			elroyOnly: (args.elroyOnly || false),
+			elroyUrl: (args.elroyUrl || null),
+			elroySecret: (args.elroySecret || null),
+			clean: (args.clean || false),
+			save: (args.save || false),
+			workdir: (args.workdir || ""),
+			configPlugin: undefined,
+			conf: undefined,
+			resource: (args.resource || undefined),
+			clusterType: (args.clusterType || undefined)
+		};
 		this.options.conf = this.parseConf(args.conf);
 		this.events = new EventHandler();
-;
 	}
 
 	/**
@@ -77,10 +81,14 @@ class Deploymentizer {
 			// Load the /cluster 'cluster.yaml' and 'configuration-var.yaml'
 			const clusterDefs = yield yamlHandler.loadClusterDefinitions(this.paths.cluster);
 
+			if (this.options.elroyUrl && this.options.elroySecret) {
+				this.events.emitInfo(`Saving to elroy is enabled`);
+			}
+
 			//Merge the definitions, render templates and save (if enabled)
 			let processClusters = [];
 			for (let i=0; i < clusterDefs.length; i++) {
-				processClusters.push(this.processClusterDef( clusterDefs[i], typeDefinitions, baseClusterDef, imageResources, configPlugin ));
+				processClusters.push(this.processClusterDef(clusterDefs[i], typeDefinitions, baseClusterDef, imageResources, configPlugin));
 			};
 			yield Promise.all(processClusters);
 			this.events.emitInfo(`Finished processing files...` );
@@ -121,7 +129,7 @@ class Deploymentizer {
 	 * @param  {[type]} imageResources  ImageResource Map
 	 */
 	processClusterDef(def, typeDefinitions, baseClusterDef, imageResources, configPlugin) {
-		return Promise.try( () => {
+		return Promise.try(() => {
 			if (def.type()) {
 				if (this.options.clusterType != undefined && this.options.clusterType !== def.type()) {
 					this.events.emitDebug(`Only processing cluster type ${this.options.clusterType}, cluster ${def.name()} is ${def.type()}, skipping...` );
@@ -137,10 +145,17 @@ class Deploymentizer {
 			}
 			// Merge with the Base Definitions.
 			def.apply(baseClusterDef);
-			this.events.emitDebug("Done Merging Cluster Definitions");
-			if (def.disabled()) {
+			let elroyProm;
+			if (this.options.elroyUrl && this.options.elroySecret) {
+				elroyProm = this.saveToElroy(def);
+			} else {
+				elroyProm = Promise.Resolve;
+			}
+			this.events.emitDebug(`Done merging cluster definitions for ${def.name()}`);
+			// Only process if the cluster isn't disabled or elroyOnly is false
+			if (def.disabled() || this.options.elroyOnly) {
 				this.events.emitInfo(`Cluster ${def.name()} is disabled, skipping...`);
-				return;
+				return elroyProm;
 			} else {
 				// apply the correct image tag based on cluster type or resource type
 				// generating the templates for each resource (if not disabled), using custom ENVs and envs from resource tags.
@@ -152,8 +167,84 @@ class Deploymentizer {
 																				configPlugin,
 																				this.options.resource,
 																				this.events);
-				return generator.process();
-			}
+				return Promise.all([elroyProm, generator.process()]);
+			};
+		});
+	}
+	
+	/**
+	 * Saves the given cluster defination to an external Elroy instance. Returns a promise that is resolved on success.
+	 *
+	 * @param {[type]} def          Cluster Definition
+	 */
+	saveToElroy(def) {
+		return Promise.try(() => {
+			// Format for elroy
+			const cluster = {
+				name: def.cluster.metadata.name,
+				tier: def.cluster.metadata.type,
+				active: (def.cluster.metadata.active || true), // Clusters are active by default
+				metadata: {
+					type: (def.cluster.metadata.type || null),
+					environment: (def.cluster.metadata.environment || null),
+					domain: (def.cluster.metadata.domain || null),
+					company: (def.cluster.metadata.company || null),
+					restricted: (def.cluster.metadata.restricted || null)
+				},
+				kubernetes: {
+					cluster: def.cluster.metadata.cluster,
+					namespace: def.cluster.metadata.namespace,
+					ingress: (def["ingress-controller"] || null)
+				},
+				resources: {}
+			};
+			// Populate resources in new format
+			_.each(def.cluster.resources, (resource, name) => {
+				cluster.resources[name] = {
+					sha: "",
+					deploymentId: "",
+					config: null
+				};
+			});
+			this.events.emitDebug(`Saving Cluster ${cluster.name} to Elroy...`);
+			return request({
+				simple: true,
+				method: "POST",
+				uri: this.options.elroyUrl + "/api/v1/deployment-environment",
+				headers: {
+					"X-Auth-Token": this.options.elroySecret
+				},
+				body: cluster,
+				json: true
+			})
+			.then((res) => {
+				this.events.emitDebug(`Successfully added Cluster ${cluster.name} to Elroy`);
+				return res;
+			})
+			.catch(errors.StatusCodeError, (reason) => {
+				// If error is because it already exists, lets do an update
+				if (reason.response.statusCode == 409) {
+					return request({
+						method: "PUT",
+						uri: this.options.elroyUrl + "/api/v1/deployment-environment/" + cluster.name,
+						headers: {
+							"X-Auth-Token": this.options.elroySecret
+						},
+						body: cluster,
+						json: true
+					})
+					.then((res) => {
+						this.events.emitDebug(`Successfully updated Cluster ${cluster.name} to Elroy`);
+						return res;
+					})
+					.catch((updateReason) => {
+						this.events.emitWarn(`Error updating Cluster ${cluster.name} to Elroy: ${updateReason}`);
+						throw updateReason;
+					});
+				}
+				this.events.emitWarn(`Error adding Cluster ${cluster.name} to Elroy: ${reason}`);
+				throw reason;
+			});
 		});
 	}
 }
