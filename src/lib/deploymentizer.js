@@ -213,11 +213,14 @@ class Deploymentizer {
 			};
 			// Populate resources in new format
 			_.each(def.cluster.resources, (resource, name) => {
-				cluster.resources[name] = {
-					sha: "",
-					deploymentId: "",
-					config: null
-				};
+				// Only include the resource if it's NOT disabled
+				if (!resource.disable) {
+					cluster.resources[name] = {
+						sha: "",
+						deploymentId: "",
+						config: null
+					};
+				}
 			});
 			this.events.emitDebug(`Saving Cluster ${cluster.name} to Elroy...`);
 			return request({
