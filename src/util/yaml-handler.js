@@ -110,7 +110,8 @@ class YamlHandler {
 				if ( exists ) {
           const cluster = yield YamlHandler.loadFile(path.join(basePath, dir, "cluster.yaml"));
 					const config = yield YamlHandler.loadFile(path.join(basePath, dir, "configuration-var.yaml"));
-					clusters.push( new ClusterDefinition( cluster, config ) );
+					const kubeconfig = yield YamlHandler.loadFile(path.join(basePath, dir, "kubeconfig.yaml"));
+					clusters.push( new ClusterDefinition(cluster, config, kubeconfig) );
 				} else {
 					logger.debug(`No Cluster file found for ${dir}, skipping...`);
 				}
