@@ -87,6 +87,7 @@ describe("Cluster Definitions", () =>  {
 				expect(clusterDef).to.exist;
 				expect(clusterDef.name()).to.equal("test-fixture");
 				expect(clusterDef.type()).to.equal("test");
+				expect(clusterDef.server).to.equal("https://test-fixture.k8s-controller.example.com");
 				expect(clusterDef.rsConfig.deployment).to.exist;
 				expect(clusterDef.rsConfig.deployment.replicaCount).to.equal(2);
 				done()
@@ -106,6 +107,7 @@ describe("Cluster Definitions", () =>  {
 				const clusterDef = clusterDefs[3];
 				expect(clusterDef).to.exist;
 				expect(clusterDef.name()).to.equal("test-fixture");
+				expect(clusterDef.server).to.equal("https://test-fixture.k8s-controller.example.com");
 				expect(clusterDef.rsConfig.deployment).to.exist;
 				expect(clusterDef.rsConfig.deployment.replicaCount).to.equal(2);
 				expect(clusterDef.rsConfig.deployment.imagePullPolicy).to.not.exist;

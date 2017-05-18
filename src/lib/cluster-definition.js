@@ -1,5 +1,6 @@
 "use strict";
 
+const _ = require("lodash");
 const resourceHandler = require("../util/resource-handler");
 
 const CLUSTER_NAMESPACE = "ClusterNamespace";
@@ -11,7 +12,7 @@ const CLUSTER_DEFINITION = "ClusterDefinition";
  * The cluster object is required, the config object is optional.
  */
 class ClusterDefinition {
-	constructor(cluster, rsConfig) {
+	constructor(cluster, rsConfig, kubeconfig) {
 		if (!cluster || cluster.kind !== CLUSTER_NAMESPACE) {
 			throw new Error("Cluster was invalid: " + ( cluster.kind || "null" ));
 		}
@@ -21,6 +22,7 @@ class ClusterDefinition {
 		this.kind = CLUSTER_DEFINITION;
 		this.cluster = cluster;
 		this.rsConfig = ( rsConfig || { kind: RESOURCE_CONFIG } );
+		this.kubeconfig = kubeconfig;
 	}
 
 	/**
@@ -92,6 +94,17 @@ class ClusterDefinition {
 	 */
 	configuration() {
 		return this.rsConfig;
+	}
+	
+	/**
+	 * Server url for cluster
+	 * @return {string} Url configured in kubeconfig
+	 */
+	get server() {
+		if (_.has(this.kubeconfig, ["clusters", 0, "cluster", "server"])) {
+			return this.kubeconfig.clusters[0].cluster.server;
+		}
+		return null;
 	}
 
 	/**
