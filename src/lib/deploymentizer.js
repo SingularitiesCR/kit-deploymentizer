@@ -207,7 +207,8 @@ class Deploymentizer {
 				kubernetes: {
 					cluster: def.cluster.metadata.cluster,
 					namespace: def.cluster.metadata.namespace,
-					ingress: (def["ingress-controller"] || null)
+					ingress: (def["ingress-controller"] || null),
+					server: def.server
 				},
 				resources: {}
 			};
