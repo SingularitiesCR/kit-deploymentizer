@@ -197,18 +197,12 @@ class Deploymentizer {
 				name: def.cluster.metadata.name,
 				tier: def.cluster.metadata.type,
 				active: (def.cluster.metadata.active || true), // Clusters are active by default
-				metadata: {
-					type: (def.cluster.metadata.type || null),
-					environment: (def.cluster.metadata.environment || null),
-					domain: (def.cluster.metadata.domain || null),
-					company: (def.cluster.metadata.company || null),
-					restricted: (def.cluster.metadata.restricted || null)
-				},
+				metadata: def.cluster.metadata,
 				kubernetes: {
 					cluster: def.cluster.metadata.cluster,
 					namespace: def.cluster.metadata.namespace,
-					ingress: (def["ingress-controller"] || null),
-					server: def.server
+					server: def.server,
+					resourceConfig: JSON.stringify(def.rsConfig)
 				},
 				resources: {}
 			};
