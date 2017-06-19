@@ -202,7 +202,7 @@ class Deploymentizer {
 					cluster: def.cluster.metadata.cluster,
 					namespace: def.cluster.metadata.namespace,
 					server: def.server,
-					resourceConfig: JSON.stringify(def.rsConfig)
+					resourceConfig: def.rsConfig
 				},
 				resources: {}
 			};
