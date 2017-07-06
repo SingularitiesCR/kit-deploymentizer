@@ -252,12 +252,12 @@ class Deploymentizer {
 						this.events.emitWarn(`Error updating Cluster ${cluster.name} to Elroy: ${updateReason}`);
 						throw updateReason;
 					});
-				}
-        		// validation problem , ie the tier doesn't exists
+				} 
+				// validation problem , ie the tier doesn't exists
 				if (reason.response.statusCode == 404) {
-          			this.events.emitDebug(`Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: 404`);
-          			return;
-        		}
+					this.events.emitDebug(`Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: 404`);
+					return;
+				}
 				this.events.emitWarn(`Error adding Cluster ${cluster.name} to Elroy: ${reason}`);
 				throw reason;
 			});
