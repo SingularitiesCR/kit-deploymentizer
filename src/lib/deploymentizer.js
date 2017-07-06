@@ -172,7 +172,7 @@ class Deploymentizer {
 			} else {
 				// apply the correct image tag based on cluster type or resource type
 				// generating the templates for each resource (if not disabled), using custom ENVs and envs from resource tags.
-				// Save files out
+				// Save files out 
 				const generator = new Generator(def, imageResources,
 																				this.paths.resources,
 																				this.paths.output,
@@ -184,7 +184,7 @@ class Deploymentizer {
 			};
 		});
 	}
-	
+
 	/**
 	 * Saves the given cluster defination to an external Elroy instance. Returns a promise that is resolved on success.
 	 *
@@ -252,6 +252,11 @@ class Deploymentizer {
 						this.events.emitWarn(`Error updating Cluster ${cluster.name} to Elroy: ${updateReason}`);
 						throw updateReason;
 					});
+				} 
+				// validation problem , ie the tier doesn't exists
+				if (reason.response.statusCode == 404) {
+					this.events.emitDebug(`Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: 404`);
+					return;
 				}
 				this.events.emitWarn(`Error adding Cluster ${cluster.name} to Elroy: ${reason}`);
 				throw reason;
