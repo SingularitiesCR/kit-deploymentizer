@@ -46,7 +46,8 @@ class Deploymentizer {
 			conf: undefined,
 			resource: (args.resource || undefined),
 			clusterType: (args.clusterType || undefined),
-			clusterName: (args.clusterName || undefined)
+			clusterName: (args.clusterName || undefined),
+			sha: (args.sha || undefined)
 		};
 		this.options.conf = this.parseConf(args.conf);
 		this.events = new EventHandler();
@@ -63,6 +64,9 @@ class Deploymentizer {
 				throw new Error("You cannot set both clusterName and clusterType at the same time");
 			}
 
+			if (this.options.sha && !this.options.resource) {
+				throw new Error("You must include the resource if deploying a specific SHA");
+			}
 			if (this.options.clusterName) {
 				this.events.emitInfo(`Running for cluster ${this.options.clusterName} and resource ${this.options.resource || "all"}`);
 			} else {
@@ -172,14 +176,15 @@ class Deploymentizer {
 			} else {
 				// apply the correct image tag based on cluster type or resource type
 				// generating the templates for each resource (if not disabled), using custom ENVs and envs from resource tags.
-				// Save files out 
+				// Save files out
 				const generator = new Generator(def, imageResources,
 																				this.paths.resources,
 																				this.paths.output,
 																				this.options.save,
 																				configPlugin,
 																				this.options.resource,
-																				this.events);
+																				this.events,
+																				this.options.sha);
 				return Promise.all([elroyProm, generator.process()]);
 			};
 		});
@@ -252,7 +257,7 @@ class Deploymentizer {
 						this.events.emitWarn(`Error updating Cluster ${cluster.name} to Elroy: ${updateReason}`);
 						throw updateReason;
 					});
-				} 
+				}
 				// validation problem , ie the tier doesn't exists
 				if (reason.response.statusCode == 404) {
 					this.events.emitDebug(`Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: 404`);

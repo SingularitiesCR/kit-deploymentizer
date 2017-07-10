@@ -47,15 +47,17 @@ class Generator {
 	 * @param	{[type]} configPlugin			Plugin to use for loading configuration information
 	 * @param	{[type]} resource 				resource to process
 	 * @param	{[type]} eventHandler 		to log events to
+	 * @param	{[type]} sha							sha to use when generating manifests, switch to uuid from elroy
 	 */
-	constructor(clusterDef, imageResourceDefs, basePath, exportPath, save, configPlugin, resource, eventHandler) {
+	constructor(clusterDef, imageResourceDefs, basePath, exportPath, save, configPlugin, resource, eventHandler, sha) {
 		this.options = {
 			clusterDef: clusterDef,
 			imageResourceDefs: imageResourceDefs,
 			basePath: basePath,
 			exportPath: path.join(exportPath, clusterDef.name()),
 			save: (save || false),
-			resource: (resource || undefined)
+			resource: (resource || undefined),
+			sha: (sha || undefined)
 		};
 		this.configPlugin = configPlugin;
 		this.eventHandler = eventHandler;
@@ -104,7 +106,7 @@ class Generator {
 				if (resource.disable === true) {
 					this.eventHandler.emitDebug(`Resource ${resourceName} is disabled in cluster ${this.options.clusterDef.name()}, skipping...`);
 				} else {
-					let localConfig = yield this._createLocalConfiguration(this.options.clusterDef.configuration(), resourceName, resource);
+					let localConfig = yield this._createLocalConfiguration(this.options.clusterDef.configuration(), resourceName, resource, this.options.sha);
 					if (resource.file) {
 						this.eventHandler.emitDebug(`Processing Resource ${resourceName} for cluster ${this.options.clusterDef.name()}`);
 						const fileStats = fileInfo(resource.file);
@@ -147,7 +149,7 @@ class Generator {
 	 * @param	{[type]} resource
 	 * @return {{}}							cloned copy of the configuration with resource specific attributes added.
 	 */
-	_createLocalConfiguration(config, resourceName, resource) {
+	_createLocalConfiguration(config, resourceName, resource, shaValue) {
 		return Promise.coroutine(function* () {
 			// clone local copy
 			let localConfig = _.cloneDeep(config);
@@ -155,6 +157,9 @@ class Generator {
 			localConfig.branch = (resource.branch || this.options.clusterDef.branch());
 			// Add the ResourceName to the config object.
 			localConfig.name = resourceName;
+			if (shaValue) {
+				localConfig.deployment = {sha: shaValue}
+			}
 
 			// Map all containers into an Array
 			let containers = [];

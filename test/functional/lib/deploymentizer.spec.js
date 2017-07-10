@@ -27,9 +27,15 @@ describe("Deploymentizer", () => {
 		resourceHandler = require("../../../src/util/resource-handler");
 		done();
 	});
-	describe("generate files", () => {
-		it("should run successfully", (done) => {
 
+	after(function(done) {
+		mockery.disable();
+		mockery.deregisterAll();
+		done();
+	});
+
+	describe("generate files", () => {
+		it("should run successfully without sha", (done) => {
 			Promise.coroutine(function* () {
 				process.env.SECRET_USERNAME = "myusername";
 				process.env.SECRET_PASSWORD = "mypassword";
@@ -62,6 +68,8 @@ describe("Deploymentizer", () => {
 				const auth = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-deployment.yaml"));
 				expect(auth).to.exist;
 				expect(auth.metadata.name).to.equal("auth-deployment");
+				expect(auth.metadata.labels.service).to.equal("auth");
+				expect(auth.metadata.labels.sha).to.be.null;
 				expect(auth.spec.template.spec.imagePullSecrets).to.include({"name": "docker-quay-secret"});
 				expect(auth.spec.replicas).to.equal(2);
 				expect(auth.spec.strategy).to.exist;
@@ -89,6 +97,51 @@ describe("Deploymentizer", () => {
 				expect(secret.data.GITHUB_TOKEN).to.equal("s@mpler@ndomt0ken");
 				expect(secret.data.SECRET_USERNAME).to.equal(resourceHandler.encode("myusername", "base64"));
 				expect(secret.data.SECRET_PASSWORD).to.equal(resourceHandler.encode("mypassword", "base64"));
+				done();
+			})().catch( (err) => {
+				done(err);
+			});
+		});
+
+		it("should run successfully with sha", (done) => {
+			Promise.coroutine(function* () {
+				process.env.SECRET_USERNAME = "myusername";
+				process.env.SECRET_PASSWORD = "mypassword";
+				process.env.GITHUB_TOKEN = "s@mpler@ndomt0ken";
+				fse.mkdirsSync(path.join(os.tmpdir(), "generated"));
+
+				const conf = yield yamlHandler.loadFile("/test/fixture/kit.yaml");
+				const deployer = new Deploymentizer ({
+					elroyUrl: "http://elroy-svc.tools.svc.cluster.local/",
+					elroySecret: "123abc",
+					clean: true,
+					save: true,
+					conf: conf,
+					sha: "SOME-SHA",
+					resource: "auth"
+				});
+				// multiple events will get fired for failure cluster.
+				deployer.events.on(deployer.events.WARN, function(message) {
+					console.log("WARN::::" + message);
+				});
+
+				expect(deployer).to.exist;
+				// generate the files from our test fixtures
+				yield deployer.process();
+				// load them back in and validate values
+				const authSvc = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-svc.yaml"));
+				expect(authSvc).to.exist;
+				expect(authSvc.metadata.name).to.equal("auth-svc");
+				expect(authSvc.metadata.labels.app).to.exist;
+				expect(authSvc.metadata.labels.app).to.equal("invisionapp");
+
+				const auth = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-deployment.yaml"));
+				expect(auth).to.exist;
+				expect(auth.metadata.name).to.equal("auth-deployment-SOME-SHA");
+				expect(auth.metadata.labels.service).to.equal("auth");
+				expect(auth.metadata.labels.sha).to.equal("SOME-SHA");
+				expect(auth.spec.strategy).to.exist;
+
 				done();
 			})().catch( (err) => {
 				done(err);
@@ -249,9 +302,4 @@ describe("Deploymentizer", () => {
 
 	});
 
-	after(function(done) {
-		mockery.disable();
-		mockery.deregisterAll();
-		done();
-	});
 });

@@ -57,6 +57,7 @@ program
 	.option("-d, --debug <boolean>", "Sets debug flag", parseBoolean, parseBoolean(process.env.DEBUG))
 	.option("-r, --resource <string>", "Sets the resource to generate", process.env.RESOURCE)
 	.option("-t, --clusterType <string>", "Sets the cluster type to generate. Cannot be used with clusterName.", process.env.CLUSTER_TYPE)
+	.option("--sha <string>", "Sets the commit SHA to use. Can only be used for single Resource", process.env.SHA)
 	.option("--clusterName <string>", "Sets the name of the cluster to generate. Cannot be used with clusterType.", process.env.CLUSTER_NAME)
 	.option("--elroyOnly <boolean>", "When enabled it will only generate what it needs to do an Elroy update", parseBoolean, parseBoolean(process.env.ELROY_ONLY))
 	.option("--elroyUrl <string>", "Set to an Elroy URL where you want the generated cluster information sent", process.env.ELROY_URL)
@@ -80,7 +81,8 @@ loadConf(program.conf).then( (conf) => {
 		conf: conf,
 		resource: program.resource,
 		clusterType: program.clusterType,
-		clusterName: program.clusterName
+		clusterName: program.clusterName,
+		sha: program.sha
 	});
 	// Enable logging of all events from the deploymentizer
 	deploymentizer.events.on(deploymentizer.events.INFO, function(message) {

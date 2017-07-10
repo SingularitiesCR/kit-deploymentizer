@@ -1,7 +1,12 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
+  {{#deployment.sha}}
+  name: {{{name}}}-deployment-{{{deployment.sha}}}
+  {{/deployment.sha}}
+  {{^deployment.sha}}
   name: {{{name}}}-deployment
+  {{/deployment.sha}}
   annotations:
     kit-deployer/dependency-selector: 'tier=backend,tier=config'
   labels:
@@ -9,6 +14,8 @@ metadata:
     tier: frontend
     tech: nodejs
     release: dev
+    sha: {{{deployment.sha}}}
+    service: {{{name}}}
 spec:
   template:
     spec:
@@ -45,3 +52,4 @@ spec:
   selector:
     matchLabels:
       name: {{{name}}}-pod
+      state: live
