@@ -64,12 +64,14 @@ describe("Deploymentizer", () => {
 				expect(authSvc.metadata.name).to.equal("auth-svc");
 				expect(authSvc.metadata.labels.app).to.exist;
 				expect(authSvc.metadata.labels.app).to.equal("invisionapp");
+				console.log("\n\n\n\n " + typeof authSvc.metadata.labels.sha)
+				expect(typeof authSvc.metadata.labels.sha === "undefined").to.equal(true)
 
 				const auth = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-deployment.yaml"));
 				expect(auth).to.exist;
 				expect(auth.metadata.name).to.equal("auth-deployment");
 				expect(auth.metadata.labels.service).to.equal("auth");
-				expect(auth.metadata.labels.sha).to.be.null;
+				expect(typeof auth.metadata.labels.sha === "undefined").to.equal(true)
 				expect(auth.spec.template.spec.imagePullSecrets).to.include({"name": "docker-quay-secret"});
 				expect(auth.spec.replicas).to.equal(2);
 				expect(auth.spec.strategy).to.exist;
@@ -118,7 +120,8 @@ describe("Deploymentizer", () => {
 					save: true,
 					conf: conf,
 					sha: "SOME-SHA",
-					resource: "auth"
+					resource: "auth",
+					fastRollback: true
 				});
 				// multiple events will get fired for failure cluster.
 				deployer.events.on(deployer.events.WARN, function(message) {
@@ -134,10 +137,12 @@ describe("Deploymentizer", () => {
 				expect(authSvc.metadata.name).to.equal("auth-svc");
 				expect(authSvc.metadata.labels.app).to.exist;
 				expect(authSvc.metadata.labels.app).to.equal("invisionapp");
+				expect(authSvc.metadata.labels.sha).to.exist;
+				expect(authSvc.metadata.labels.sha).to.equal("SOME-SHA");
 
 				const auth = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-deployment.yaml"));
 				expect(auth).to.exist;
-				expect(auth.metadata.name).to.equal("auth-deployment-SOME-SHA");
+				expect(auth.metadata.name).to.equal("auth-deployment");
 				expect(auth.metadata.labels.service).to.equal("auth");
 				expect(auth.metadata.labels.sha).to.equal("SOME-SHA");
 				expect(auth.spec.strategy).to.exist;

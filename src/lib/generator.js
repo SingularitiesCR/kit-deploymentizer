@@ -48,8 +48,9 @@ class Generator {
 	 * @param	{[type]} resource 				resource to process
 	 * @param	{[type]} eventHandler 		to log events to
 	 * @param	{[type]} sha							sha to use when generating manifests, switch to uuid from elroy
+	 * @param	{[type]} fastRollback			determines if fastRollback support is enabled. used by manifest generation
 	 */
-	constructor(clusterDef, imageResourceDefs, basePath, exportPath, save, configPlugin, resource, eventHandler, sha) {
+	constructor(clusterDef, imageResourceDefs, basePath, exportPath, save, configPlugin, resource, eventHandler, sha, fastRollback) {
 		this.options = {
 			clusterDef: clusterDef,
 			imageResourceDefs: imageResourceDefs,
@@ -57,7 +58,8 @@ class Generator {
 			exportPath: path.join(exportPath, clusterDef.name()),
 			save: (save || false),
 			resource: (resource || undefined),
-			sha: (sha || undefined)
+			sha: (sha || undefined),
+			fastRollback: (fastRollback || false)
 		};
 		this.configPlugin = configPlugin;
 		this.eventHandler = eventHandler;
@@ -106,7 +108,7 @@ class Generator {
 				if (resource.disable === true) {
 					this.eventHandler.emitDebug(`Resource ${resourceName} is disabled in cluster ${this.options.clusterDef.name()}, skipping...`);
 				} else {
-					let localConfig = yield this._createLocalConfiguration(this.options.clusterDef.configuration(), resourceName, resource, this.options.sha);
+					let localConfig = yield this._createLocalConfiguration(this.options.clusterDef.configuration(), resourceName, resource);
 					if (resource.file) {
 						this.eventHandler.emitDebug(`Processing Resource ${resourceName} for cluster ${this.options.clusterDef.name()}`);
 						const fileStats = fileInfo(resource.file);
@@ -149,7 +151,7 @@ class Generator {
 	 * @param	{[type]} resource
 	 * @return {{}}							cloned copy of the configuration with resource specific attributes added.
 	 */
-	_createLocalConfiguration(config, resourceName, resource, shaValue) {
+	_createLocalConfiguration(config, resourceName, resource) {
 		return Promise.coroutine(function* () {
 			// clone local copy
 			let localConfig = _.cloneDeep(config);
@@ -157,8 +159,8 @@ class Generator {
 			localConfig.branch = (resource.branch || this.options.clusterDef.branch());
 			// Add the ResourceName to the config object.
 			localConfig.name = resourceName;
-			if (shaValue) {
-				localConfig.deployment = {sha: shaValue}
+			if (this.options.sha) {
+				localConfig.deployment = {sha: this.options.sha, fastRollback: this.options.fastRollback}
 			}
 
 			// Map all containers into an Array

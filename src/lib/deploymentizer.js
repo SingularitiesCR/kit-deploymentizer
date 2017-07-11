@@ -47,7 +47,8 @@ class Deploymentizer {
 			resource: (args.resource || undefined),
 			clusterType: (args.clusterType || undefined),
 			clusterName: (args.clusterName || undefined),
-			sha: (args.sha || undefined)
+			sha: (args.sha || undefined),
+			fastRollback: (args.fastRollback || false)
 		};
 		this.options.conf = this.parseConf(args.conf);
 		this.events = new EventHandler();
@@ -66,6 +67,9 @@ class Deploymentizer {
 
 			if (this.options.sha && !this.options.resource) {
 				throw new Error("You must include the resource if deploying a specific SHA");
+			}
+			if (this.options.fastRollback && !this.options.sha) {
+				throw new Error("You must include the sha if configuring fastRollbacks");
 			}
 			if (this.options.clusterName) {
 				this.events.emitInfo(`Running for cluster ${this.options.clusterName} and resource ${this.options.resource || "all"}`);
@@ -184,7 +188,8 @@ class Deploymentizer {
 																				configPlugin,
 																				this.options.resource,
 																				this.events,
-																				this.options.sha);
+																				this.options.sha,
+																				this.options.fastRollback);
 				return Promise.all([elroyProm, generator.process()]);
 			};
 		});
