@@ -47,10 +47,10 @@ class Generator {
 	 * @param	{[type]} configPlugin			Plugin to use for loading configuration information
 	 * @param	{[type]} resource 				resource to process
 	 * @param	{[type]} eventHandler 		to log events to
-	 * @param	{[type]} sha							sha to use when generating manifests, switch to uuid from elroy
+	 * @param	{[type]} id								id to use when generating manifests, switch to uuid from elroy
 	 * @param	{[type]} fastRollback			determines if fastRollback support is enabled. used by manifest generation
 	 */
-	constructor(clusterDef, imageResourceDefs, basePath, exportPath, save, configPlugin, resource, eventHandler, sha, fastRollback) {
+	constructor(clusterDef, imageResourceDefs, basePath, exportPath, save, configPlugin, resource, eventHandler, id, fastRollback) {
 		this.options = {
 			clusterDef: clusterDef,
 			imageResourceDefs: imageResourceDefs,
@@ -58,7 +58,7 @@ class Generator {
 			exportPath: path.join(exportPath, clusterDef.name()),
 			save: (save || false),
 			resource: (resource || undefined),
-			sha: (sha || undefined),
+			id: (id || undefined),
 			fastRollback: (fastRollback || false)
 		};
 		this.configPlugin = configPlugin;
@@ -159,8 +159,8 @@ class Generator {
 			localConfig.branch = (resource.branch || this.options.clusterDef.branch());
 			// Add the ResourceName to the config object.
 			localConfig.name = resourceName;
-			if (this.options.sha) {
-				localConfig.deployment = {sha: this.options.sha, fastRollback: this.options.fastRollback}
+			if (this.options.id) {
+				localConfig.deployment = {id: this.options.id, fastRollback: this.options.fastRollback}
 			}
 
 			// Map all containers into an Array

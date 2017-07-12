@@ -47,7 +47,7 @@ class Deploymentizer {
 			resource: (args.resource || undefined),
 			clusterType: (args.clusterType || undefined),
 			clusterName: (args.clusterName || undefined),
-			sha: (args.sha || undefined),
+			id: (args.id || undefined),
 			fastRollback: (args.fastRollback || false)
 		};
 		this.options.conf = this.parseConf(args.conf);
@@ -65,11 +65,11 @@ class Deploymentizer {
 				throw new Error("You cannot set both clusterName and clusterType at the same time");
 			}
 
-			if (this.options.sha && !this.options.resource) {
-				throw new Error("You must include the resource if deploying a specific SHA");
+			if (this.options.id && !this.options.resource) {
+				throw new Error("You must include the resource if deploying a specific id");
 			}
-			if (this.options.fastRollback && !this.options.sha) {
-				throw new Error("You must include the sha if configuring fastRollbacks");
+			if (this.options.fastRollback && !this.options.id) {
+				throw new Error("You must include the id if configuring fastRollbacks");
 			}
 			if (this.options.clusterName) {
 				this.events.emitInfo(`Running for cluster ${this.options.clusterName} and resource ${this.options.resource || "all"}`);
@@ -188,7 +188,7 @@ class Deploymentizer {
 																				configPlugin,
 																				this.options.resource,
 																				this.events,
-																				this.options.sha,
+																				this.options.id,
 																				this.options.fastRollback);
 				return Promise.all([elroyProm, generator.process()]);
 			};
@@ -221,7 +221,7 @@ class Deploymentizer {
 				// Only include the resource if it's NOT disabled
 				if (!resource.disable) {
 					cluster.resources[name] = {
-						sha: "",
+						id: "",
 						deploymentId: "",
 						config: null
 					};

@@ -9,9 +9,9 @@ metadata:
     tier: frontend
     tech: nodejs
     release: stable
-    {{#deployment.sha}}
-    sha: {{{deployment.sha}}}
-    {{/deployment.sha}}
+    {{#deployment.id}}
+    id: {{{deployment.id}}}
+    {{/deployment.id}}
     service: {{{name}}}
 spec:
   template:

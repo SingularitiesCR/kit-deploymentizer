@@ -35,7 +35,7 @@ describe("Deploymentizer", () => {
 	});
 
 	describe("generate files", () => {
-		it("should run successfully without sha", (done) => {
+		it("should run successfully without id", (done) => {
 			Promise.coroutine(function* () {
 				process.env.SECRET_USERNAME = "myusername";
 				process.env.SECRET_PASSWORD = "mypassword";
@@ -64,14 +64,14 @@ describe("Deploymentizer", () => {
 				expect(authSvc.metadata.name).to.equal("auth-svc");
 				expect(authSvc.metadata.labels.app).to.exist;
 				expect(authSvc.metadata.labels.app).to.equal("invisionapp");
-				console.log("\n\n\n\n " + typeof authSvc.metadata.labels.sha)
-				expect(typeof authSvc.metadata.labels.sha === "undefined").to.equal(true)
+				console.log("\n\n\n\n " + typeof authSvc.metadata.labels.id)
+				expect(typeof authSvc.metadata.labels.id === "undefined").to.equal(true)
 
 				const auth = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-deployment.yaml"));
 				expect(auth).to.exist;
 				expect(auth.metadata.name).to.equal("auth-deployment");
 				expect(auth.metadata.labels.service).to.equal("auth");
-				expect(typeof auth.metadata.labels.sha === "undefined").to.equal(true)
+				expect(typeof auth.metadata.labels.id === "undefined").to.equal(true)
 				expect(auth.spec.template.spec.imagePullSecrets).to.include({"name": "docker-quay-secret"});
 				expect(auth.spec.replicas).to.equal(2);
 				expect(auth.spec.strategy).to.exist;
@@ -105,7 +105,7 @@ describe("Deploymentizer", () => {
 			});
 		});
 
-		it("should run successfully with sha", (done) => {
+		it("should run successfully with id", (done) => {
 			Promise.coroutine(function* () {
 				process.env.SECRET_USERNAME = "myusername";
 				process.env.SECRET_PASSWORD = "mypassword";
@@ -119,7 +119,7 @@ describe("Deploymentizer", () => {
 					clean: true,
 					save: true,
 					conf: conf,
-					sha: "SOME-SHA",
+					id: "SOME-SHA",
 					resource: "auth",
 					fastRollback: true
 				});
@@ -137,14 +137,14 @@ describe("Deploymentizer", () => {
 				expect(authSvc.metadata.name).to.equal("auth-svc");
 				expect(authSvc.metadata.labels.app).to.exist;
 				expect(authSvc.metadata.labels.app).to.equal("invisionapp");
-				expect(authSvc.metadata.labels.sha).to.exist;
-				expect(authSvc.metadata.labels.sha).to.equal("SOME-SHA");
+				expect(authSvc.metadata.labels.id).to.exist;
+				expect(authSvc.metadata.labels.id).to.equal("SOME-SHA");
 
 				const auth = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-deployment.yaml"));
 				expect(auth).to.exist;
 				expect(auth.metadata.name).to.equal("auth-deployment");
 				expect(auth.metadata.labels.service).to.equal("auth");
-				expect(auth.metadata.labels.sha).to.equal("SOME-SHA");
+				expect(auth.metadata.labels.id).to.equal("SOME-SHA");
 				expect(auth.spec.strategy).to.exist;
 
 				done();
@@ -153,7 +153,7 @@ describe("Deploymentizer", () => {
 			});
 		});
 
-		it("should run successfully with sha but no fastRollback", (done) => {
+		it("should run successfully with id but no fastRollback", (done) => {
 			Promise.coroutine(function* () {
 				process.env.SECRET_USERNAME = "myusername";
 				process.env.SECRET_PASSWORD = "mypassword";
@@ -168,7 +168,7 @@ describe("Deploymentizer", () => {
 					save: true,
 					conf: conf,
 					resource: "auth",
-					sha: "SOME-SHA"
+					id: "SOME-SHA"
 				});
 				// multiple events will get fired for failure cluster.
 				deployer.events.on(deployer.events.WARN, function(message) {
@@ -184,13 +184,13 @@ describe("Deploymentizer", () => {
 				expect(authSvc.metadata.name).to.equal("auth-svc");
 				expect(authSvc.metadata.labels.app).to.exist;
 				expect(authSvc.metadata.labels.app).to.equal("invisionapp");
-				expect(typeof authSvc.metadata.labels.sha === "undefined").to.equal(true)
+				expect(typeof authSvc.metadata.labels.id === "undefined").to.equal(true)
 
 				const auth = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-deployment.yaml"));
 				expect(auth).to.exist;
 				expect(auth.metadata.name).to.equal("auth-deployment");
 				expect(auth.metadata.labels.service).to.equal("auth");
-				expect(auth.metadata.labels.sha).to.equal("SOME-SHA");
+				expect(auth.metadata.labels.id).to.equal("SOME-SHA");
 				expect(auth.spec.strategy).to.exist;
 
 				done();
