@@ -64,7 +64,6 @@ describe("Deploymentizer", () => {
 				expect(authSvc.metadata.name).to.equal("auth-svc");
 				expect(authSvc.metadata.labels.app).to.exist;
 				expect(authSvc.metadata.labels.app).to.equal("invisionapp");
-				console.log("\n\n\n\n " + typeof authSvc.metadata.labels.id)
 				expect(typeof authSvc.metadata.labels.id === "undefined").to.equal(true)
 
 				const auth = yield yamlHandler.loadFile(path.join(os.tmpdir(), "generated", "test-fixture", "auth-deployment.yaml"));
@@ -119,7 +118,7 @@ describe("Deploymentizer", () => {
 					clean: true,
 					save: true,
 					conf: conf,
-					id: "SOME-SHA",
+					deployId: "SOME-SHA",
 					resource: "auth",
 					fastRollback: true
 				});
@@ -168,7 +167,7 @@ describe("Deploymentizer", () => {
 					save: true,
 					conf: conf,
 					resource: "auth",
-					id: "SOME-SHA"
+					deployId: "SOME-SHA"
 				});
 				// multiple events will get fired for failure cluster.
 				deployer.events.on(deployer.events.WARN, function(message) {

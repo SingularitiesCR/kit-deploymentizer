@@ -47,7 +47,7 @@ class Deploymentizer {
 			resource: (args.resource || undefined),
 			clusterType: (args.clusterType || undefined),
 			clusterName: (args.clusterName || undefined),
-			id: (args.id || undefined),
+			deployId: (args.deployId || undefined),
 			fastRollback: (args.fastRollback || false)
 		};
 		this.options.conf = this.parseConf(args.conf);
@@ -65,10 +65,10 @@ class Deploymentizer {
 				throw new Error("You cannot set both clusterName and clusterType at the same time");
 			}
 
-			if (this.options.id && !this.options.resource) {
+			if (this.options.deployId && !this.options.resource) {
 				throw new Error("You must include the resource if deploying a specific id");
 			}
-			if (this.options.fastRollback && !this.options.id) {
+			if (this.options.fastRollback && !this.options.deployId) {
 				throw new Error("You must include the id if configuring fastRollbacks");
 			}
 			if (this.options.clusterName) {
@@ -188,7 +188,7 @@ class Deploymentizer {
 																				configPlugin,
 																				this.options.resource,
 																				this.events,
-																				this.options.id,
+																				this.options.deployId,
 																				this.options.fastRollback);
 				return Promise.all([elroyProm, generator.process()]);
 			};
