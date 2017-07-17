@@ -6,3 +6,8 @@ metadata:
   {{#svc.labels}}
     {{{name}}}: {{{value}}}
   {{/svc.labels}}
+  {{#deployment.fastRollback}}
+    {{#deployment.id}}
+    id: {{{deployment.id}}}
+    {{/deployment.id}}
+  {{/deployment.fastRollback}}
