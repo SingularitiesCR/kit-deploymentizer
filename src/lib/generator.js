@@ -160,7 +160,12 @@ class Generator {
 			// Add the ResourceName to the config object.
 			localConfig.name = resourceName;
 			if (this.options.deployId) {
-				localConfig.deployment = {id: this.options.deployId, fastRollback: this.options.fastRollback}
+				if (localConfig.deployment) {
+					localConfig.deployment.id = this.options.deployId
+					localConfig.deployment.fastRollback= this.options.fastRollback
+				} else {
+					localConfig.deployment = {id: this.options.deployId, fastRollback: this.options.fastRollback}
+				}
 			}
 
 			// Map all containers into an Array
