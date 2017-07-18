@@ -190,7 +190,9 @@ describe("Deploymentizer", () => {
 				expect(auth.metadata.name).to.equal("auth-deployment");
 				expect(auth.metadata.labels.service).to.equal("auth");
 				expect(auth.metadata.labels.id).to.equal("SOME-SHA");
+				expect(auth.spec.replicas).to.equal(2);
 				expect(auth.spec.strategy).to.exist;
+				console.log("\n\n AuthSpec: " + JSON.stringify(auth))
 
 				done();
 			})().catch( (err) => {
