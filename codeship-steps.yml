@@ -8,7 +8,7 @@
     #   service: app
     #   command: lint
     - name: Format
-      command: npm run format
+      command: format
     - name: Run unit tests
       command: test-unit
     - name: Run functional tests
