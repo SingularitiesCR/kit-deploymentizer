@@ -1,5 +1,6 @@
 - name: Tests
   type: parallel
+  service: app
   encrypted_dockercfg_path: codeship-dockercfg.encrypted
   steps:
     # TODO: disable eslint until eslint-config-invision package is public
@@ -9,10 +10,8 @@
     - name: Format
       command: npm run format
     - name: Run unit tests
-      service: app
       command: test-unit
     - name: Run functional tests
-      service: app
       command: test-functional
 
 - name: Registry
