@@ -7,18 +7,17 @@ const logger = require("log4js").getLogger();
  * Wraps the supplied plugin.
  */
 class PluginHandler {
-
-	/**
+  /**
 	 * Load the plugin defined
 	 * @param  {[type]} pluginPath [description]
 	 * @return {[type]}            [description]
 	 */
-	constructor(pluginPath, options) {
-		const plugin = require(pluginPath)
-		this.configService = new plugin(options);
-	}
+  constructor(pluginPath, options) {
+    const plugin = require(pluginPath);
+    this.configService = new plugin(options);
+  }
 
-	/**
+  /**
 	 * Invoke the defined Configuration Service returning the result.
 	 *
 	 * The Object returned from the plugin must match :
@@ -33,15 +32,17 @@ class PluginHandler {
 	 * @param  {[type]} cluster     definition of the cluster that the service will run on
 	 * @return {[type]}             A promise fulfilled with the ENV values for the given service/env/cluster
 	 */
-	fetch( service, cluster ) {
-		// Convert to a Bluebird Promise since we dont know what type we will get back.
-		return Promise.resolve(
-				this.configService.fetch( service, cluster )
-			).catch( (err) => {
-				logger.error(`Configuration could not be loaded for ${service.name} for cluster ${cluster.name()}.`);
-				throw err;
-			});
-	}
+  fetch(service, cluster) {
+    // Convert to a Bluebird Promise since we dont know what type we will get back.
+    return Promise.resolve(
+      this.configService.fetch(service, cluster)
+    ).catch(err => {
+      logger.error(
+        `Configuration could not be loaded for ${service.name} for cluster ${cluster.name()}.`
+      );
+      throw err;
+    });
+  }
 }
 
 module.exports = PluginHandler;

@@ -12,124 +12,129 @@ const CLUSTER_DEFINITION = "ClusterDefinition";
  * The cluster object is required, the config object is optional.
  */
 class ClusterDefinition {
-	constructor(cluster, rsConfig, kubeconfig) {
-		if (!cluster || cluster.kind !== CLUSTER_NAMESPACE) {
-			throw new Error("Cluster was invalid: " + ( cluster.kind || "null" ));
-		}
-		if (rsConfig && rsConfig.kind !== RESOURCE_CONFIG) {
-			throw new Error("Config was invalid: " + ( rsConfig.kind || "null" ));
-		}
-		this.kind = CLUSTER_DEFINITION;
-		this.cluster = cluster;
-		this.rsConfig = ( rsConfig || { kind: RESOURCE_CONFIG } );
-		this.kubeconfig = kubeconfig;
-	}
+  constructor(cluster, rsConfig, kubeconfig) {
+    if (!cluster || cluster.kind !== CLUSTER_NAMESPACE) {
+      throw new Error("Cluster was invalid: " + (cluster.kind || "null"));
+    }
+    if (rsConfig && rsConfig.kind !== RESOURCE_CONFIG) {
+      throw new Error("Config was invalid: " + (rsConfig.kind || "null"));
+    }
+    this.kind = CLUSTER_DEFINITION;
+    this.cluster = cluster;
+    this.rsConfig = rsConfig || { kind: RESOURCE_CONFIG };
+    this.kubeconfig = kubeconfig;
+  }
 
-	/**
+  /**
 	 * The name of this cluster.
 	 * @return {string}
 	 */
-	name() {
-		return this.cluster.metadata.name;
-	}
+  name() {
+    return this.cluster.metadata.name;
+  }
 
-	/**
+  /**
 	 * Helper method for accessing metadata
 	 */
-	metadata() {
-		return this.cluster.metadata;
-	}
+  metadata() {
+    return this.cluster.metadata;
+  }
 
-	/**
+  /**
 	 * Type of this cluster
 	 * @return {string} one of [develop, testing, production]
 	 */
-	type() {
-		return this.cluster.metadata.type;
-	}
+  type() {
+    return this.cluster.metadata.type;
+  }
 
-	/**
+  /**
 	 * Return the branch of the cluster
 	 * @return {string} branch name
 	 */
-	branch() {
-		return this.cluster.metadata.branch;
-	}
+  branch() {
+    return this.cluster.metadata.branch;
+  }
 
-	/**
+  /**
 	 * Clusters can be disabled by adding a metadata.disable == true
 	 * This will keep the cluster from being generated.
 	 * @return {boolean} if a cluster has been marked disable === true
 	 */
-	disabled() {
-		return (this.cluster.metadata.disable && this.cluster.metadata.disable === true);
-	}
+  disabled() {
+    return (
+      this.cluster.metadata.disable && this.cluster.metadata.disable === true
+    );
+  }
 
-	/**
+  /**
 	 * If true, will not halt processing if a failure occures for a single resource.
 	 */
-	allowFailure() {
-		return (this.cluster.metadata.allowFailure && this.cluster.metadata.allowFailure === true)
-	}
+  allowFailure() {
+    return (
+      this.cluster.metadata.allowFailure &&
+      this.cluster.metadata.allowFailure === true
+    );
+  }
 
-	/**
+  /**
 	 * Resources for this cluster
 	 * @return { "resource-name": data, ...} resource map by name
 	 */
-	resources() {
-		return this.cluster.resources;
-	}
+  resources() {
+    return this.cluster.resources;
+  }
 
-	/**
+  /**
 	 * get specific resource for cluster
 	 * @param  {string} resourceName name of resource
 	 * @return {Resource}
 	 */
-	resource(resourceName) {
-		return this.cluster.resources[resourceName];
-	}
-	/**
+  resource(resourceName) {
+    return this.cluster.resources[resourceName];
+  }
+  /**
 	 * Configuration information for cluster
 	 * @return {ResourceConfig} ResourceConfig object
 	 */
-	configuration() {
-		return this.rsConfig;
-	}
-	
-	/**
+  configuration() {
+    return this.rsConfig;
+  }
+
+  /**
 	 * Server url for cluster
 	 * @return {string} Url configured in kubeconfig
 	 */
-	get server() {
-		if (_.has(this.kubeconfig, ["clusters", 0, "cluster", "server"])) {
-			return this.kubeconfig.clusters[0].cluster.server;
-		}
-		return null;
-	}
+  get server() {
+    if (_.has(this.kubeconfig, ["clusters", 0, "cluster", "server"])) {
+      return this.kubeconfig.clusters[0].cluster.server;
+    }
+    return null;
+  }
 
-	/**
+  /**
 	 * Applies the base Object to this Definition.
 	 * Values in this definition take precedent.
 	 * @param  {Object} base Object to be merged
 	 */
-	apply(base) {
-		if (!base) return;
+  apply(base) {
+    if (!base) return;
 
-		switch (base.kind) {
-			case CLUSTER_DEFINITION:
-				this.cluster = resourceHandler.merge(base.cluster, this.cluster);
-				this.rsConfig = resourceHandler.merge(base.rsConfig, this.rsConfig);
-				break;
-			case CLUSTER_NAMESPACE:
-				this.cluster = resourceHandler.merge(base, this.cluster);
-				break;
-			case RESOURCE_CONFIG:
-				this.rsConfig = resourceHandler.merge(base, this.rsConfig);
-				break;
-			default:
-				throw new Error("Unknown Type");
-		}
-	}
+    switch (base.kind) {
+      case CLUSTER_DEFINITION:
+        this.cluster = resourceHandler.merge(base.cluster, this.cluster);
+        this.rsConfig = resourceHandler.merge(base.rsConfig, this.rsConfig);
+        break;
+      case CLUSTER_NAMESPACE:
+        this.cluster = resourceHandler.merge(base, this.cluster);
+        break;
+      case RESOURCE_CONFIG:
+        this.rsConfig = resourceHandler.merge(base, this.rsConfig);
+        break;
+      default:
+        throw new Error("Unknown Type");
+    }
+  }
 }
 
 module.exports = ClusterDefinition;

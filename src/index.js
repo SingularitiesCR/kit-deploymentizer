@@ -3,7 +3,7 @@
 const Deploymentizer = require("./lib/deploymentizer");
 
 const KitDeploymentizer = {
-	Deploymentizer: Deploymentizer
+  Deploymentizer: Deploymentizer
 };
 
 module.exports = KitDeploymentizer;
