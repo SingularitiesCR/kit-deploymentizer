@@ -278,11 +278,10 @@ class Deploymentizer {
       // Populate resources in new format
       _.each(def.cluster.resources, (resource, name) => {
         // Only include the resource if it's NOT disabled
+        // TODO: include resource data in config
         if (!resource.disable) {
           cluster.resources[name] = {
-            id: "",
-            deploymentId: "",
-            config: null
+            config: {}
           };
         }
       });
