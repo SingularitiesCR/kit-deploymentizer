@@ -25,7 +25,7 @@
     "test-functional": "mocha --recursive test/functional",
     "test": "mocha --recursive test",
     "lint": "eslint src test",
-    "format": "prettier -l '{src,test}/**/*.{js}'"
+    "format": "prettier -l '{src,test}/**/{deploymentizer,*.js}'"
   },
   "dependencies": {
     "bluebird": "3.2.2",
@@ -48,8 +48,5 @@
     "eslint-plugin-prettier": "2.1.2",
     "prettier": "1.5.3"
   },
-  "files": [
-    "LICENSE",
-    "src"
-  ]
+  "files": ["LICENSE", "src"]
 }
