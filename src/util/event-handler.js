@@ -26,7 +26,6 @@ class DeploymentizerEmitter extends EventEmitter {
   emitDebug(msg) {
     this.emit(this.DEBUG, msg);
   }
-
 }
 
 module.exports = DeploymentizerEmitter;
