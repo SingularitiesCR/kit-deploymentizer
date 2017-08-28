@@ -12,6 +12,7 @@ const fse = require("fs-extra");
 const fseRemove = Promise.promisify(fse.remove);
 const request = require("request-promise");
 const errors = require("request-promise/errors");
+const ElroySync = require("./elroy-sync");
 
 logger.setLevel(process.env.DEBUG === "true" ? "DEBUG" : "ERROR");
 
@@ -222,7 +223,7 @@ class Deploymentizer {
       def.apply(baseClusterDef);
       let elroyProm;
       if (this.options.elroyUrl && this.options.elroySecret) {
-        elroyProm = this.saveToElroy(def);
+        elroyProm = ElroySync.SaveToElroy(def, this.events, this.options);
       } else {
         elroyProm = Promise.Resolve;
       }
@@ -251,97 +252,6 @@ class Deploymentizer {
         );
         return Promise.all([elroyProm, generator.process()]);
       }
-    });
-  }
-
-  /**
-	 * Saves the given cluster defination to an external Elroy instance. Returns a promise that is resolved on success.
-	 *
-	 * @param {[type]} def          Cluster Definition
-	 */
-  saveToElroy(def) {
-    return Promise.try(() => {
-      // Format for elroy
-      const cluster = {
-        name: def.cluster.metadata.name,
-        tier: def.cluster.metadata.type,
-        active: def.cluster.metadata.active || true, // Clusters are active by default
-        metadata: def.cluster.metadata,
-        kubernetes: {
-          cluster: def.cluster.metadata.cluster,
-          namespace: def.cluster.metadata.namespace,
-          server: def.server,
-          resourceConfig: def.rsConfig
-        },
-        resources: {}
-      };
-      // Populate resources in new format
-      _.each(def.cluster.resources, (resource, name) => {
-        // Only include the resource if it's NOT disabled
-        // TODO: include resource data in config
-        if (!resource.disable) {
-          cluster.resources[name] = {
-            config: {}
-          };
-        }
-      });
-      this.events.emitDebug(`Saving Cluster ${cluster.name} to Elroy...`);
-      return request({
-        simple: true,
-        method: "POST",
-        uri: this.options.elroyUrl + "/api/v1/deployment-environment",
-        headers: {
-          "X-Auth-Token": this.options.elroySecret
-        },
-        body: cluster,
-        json: true
-      })
-        .then(res => {
-          this.events.emitDebug(
-            `Successfully added Cluster ${cluster.name} to Elroy`
-          );
-          return res;
-        })
-        .catch(errors.StatusCodeError, reason => {
-          // If error is because it already exists, lets do an update
-          if (reason.response.statusCode == 409) {
-            return request({
-              method: "PUT",
-              uri:
-                this.options.elroyUrl +
-                "/api/v1/deployment-environment/" +
-                cluster.name,
-              headers: {
-                "X-Auth-Token": this.options.elroySecret
-              },
-              body: cluster,
-              json: true
-            })
-              .then(res => {
-                this.events.emitDebug(
-                  `Successfully updated Cluster ${cluster.name} to Elroy`
-                );
-                return res;
-              })
-              .catch(updateReason => {
-                this.events.emitWarn(
-                  `Error updating Cluster ${cluster.name} to Elroy: ${updateReason}`
-                );
-                throw updateReason;
-              });
-          }
-          // validation problem , ie the tier doesn't exists
-          if (reason.response.statusCode == 404) {
-            this.events.emitDebug(
-              `Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: 404`
-            );
-            return;
-          }
-          this.events.emitWarn(
-            `Error adding Cluster ${cluster.name} to Elroy: ${reason}`
-          );
-          throw reason;
-        });
     });
   }
 }
