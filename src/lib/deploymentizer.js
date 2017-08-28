@@ -222,7 +222,7 @@ class Deploymentizer {
       def.apply(baseClusterDef);
       let elroyProm;
       if (this.options.elroyUrl && this.options.elroySecret) {
-        elroyProm = this.saveToElroy(def);
+        elroyProm = this.saveToElroy(def, 0);
       } else {
         elroyProm = Promise.Resolve;
       }
@@ -259,8 +259,15 @@ class Deploymentizer {
 	 *
 	 * @param {[type]} def          Cluster Definition
 	 */
-  saveToElroy(def) {
+  saveToElroy(def, retries) {
     return Promise.try(() => {
+      if (retries >= 2) {
+        const msg = `Error adding Cluster ${def.cluster.metadata
+          .name} to Elroy: too many retries ${retries}`;
+        this.events.emitWarn(msg);
+        throw msg;
+      }
+
       // Format for elroy
       const cluster = {
         name: def.cluster.metadata.name,
@@ -287,6 +294,10 @@ class Deploymentizer {
         }
       });
       this.events.emitDebug(`Saving Cluster ${cluster.name} to Elroy...`);
+      if (retries > 0) {
+        this.events.emitDebug(`Is retrying it with ${retries} retries`);
+      }
+
       return request({
         simple: true,
         method: "POST",
@@ -337,6 +348,14 @@ class Deploymentizer {
               `Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: 404`
             );
             return;
+          }
+          // retrying if code == 504 , elroy is not sending this status, so something went wrong
+          // inside the ELB (or kubernetes proxy) -- Gateway timeout
+          if (reason.response.statusCode == 504) {
+            this.events.emitDebug(
+              `Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: 504`
+            );
+            return this.saveToElroy(def, retries++);
           }
           this.events.emitWarn(
             `Error adding Cluster ${cluster.name} to Elroy: ${reason}`
