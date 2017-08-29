@@ -123,6 +123,6 @@ describe("ElroySync", () => {
           done();
         }, 3000);
       });
-    });
+    }).timeout(5000);
   });
 });

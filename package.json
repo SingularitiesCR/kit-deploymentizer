@@ -21,7 +21,7 @@
   "main": "./src/index.js",
   "bin": "./src/deploymentizer",
   "scripts": {
-    "test-unit": "mocha --recursive test/unit --timeout 15000",
+    "test-unit": "mocha --recursive test/unit",
     "test-functional": "mocha --recursive test/functional",
     "test": "mocha --recursive test",
     "lint": "eslint src test",
