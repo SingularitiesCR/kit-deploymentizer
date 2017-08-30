@@ -125,6 +125,12 @@ class Deploymentizer {
 
       if (this.options.elroyUrl && this.options.elroySecret) {
         this.events.emitInfo(`Saving to elroy is enabled`);
+        this.events.emitInfo(`Checking for environments to deactivate`);
+        yield ElroySync.RemoveDeploymentEnvironments(
+          clusterDefs,
+          this.events,
+          this.options
+        );
       }
 
       //Merge the definitions, render templates and save (if enabled)
