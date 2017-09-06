@@ -107,10 +107,11 @@ class ElroySync {
           if (!retryCount) {
             retryCount = 0;
           }
-          if (reason.response.statusCode == 504 && retryCount < 3) {
+          if (reason.response.statusCode >= 502 && retryCount < 3) {
             retryCount++;
             events.emitWarn(
-              `Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: 504, retrying ${retryCount}`
+              `Problem syncing the cluster ${cluster.name} with tier ${cluster.tier} to Elroy: ${reason
+                .response.statusCode}, retrying ${retryCount}`
             );
             return Promise.delay(500).then(() => {
               return _self.SaveToElroy(def, events, options, retryCount);
