@@ -86,7 +86,9 @@ class ElroySync {
         // TODO: include resource data in config
         if (!resource.disable) {
           cluster.resources[name] = {
-            config: {}
+            config: {
+              branch: resource.branch
+            }
           };
         }
       });
