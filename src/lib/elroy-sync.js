@@ -87,7 +87,8 @@ class ElroySync {
         if (!resource.disable) {
           cluster.resources[name] = {
             config: {
-              branch: resource.branch
+              branch: resource.branch,
+              containers: resource.containers
             }
           };
         }
