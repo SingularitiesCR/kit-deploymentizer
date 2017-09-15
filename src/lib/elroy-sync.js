@@ -78,18 +78,9 @@ class ElroySync {
           server: def.server,
           resourceConfig: def.rsConfig
         },
-        resources: {}
+        resources: _self.populateResources(def.cluster.resources)
       };
-      // Populate resources in new format
-      _.each(def.cluster.resources, (resource, name) => {
-        // Only include the resource if it's NOT disabled
-        // TODO: include resource data in config
-        if (!resource.disable) {
-          cluster.resources[name] = {
-            config: {}
-          };
-        }
-      });
+
       events.emitDebug(`Saving Cluster ${cluster.name} to Elroy...`);
       return _self.createCluster(cluster, events, options).catch(reason => {
         if (reason.response && reason.response.statusCode) {
@@ -164,6 +155,21 @@ class ElroySync {
         );
         throw updateReason;
       });
+  }
+
+  // Populate resources in new format
+  static populateResources(resources) {
+    let result = {};
+    _.each(resources, (resource, name) => {
+      // Only include the resource if it's NOT disabled
+      if (!resource.disable) {
+        delete resource.disable;
+        let config = {};
+        _.extend(config, resource);
+        result[name] = { config: config };
+      }
+    });
+    return result;
   }
 }
 module.exports = ElroySync;
