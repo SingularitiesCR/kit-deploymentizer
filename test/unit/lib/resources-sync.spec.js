@@ -9,6 +9,7 @@ describe("Sync Cluster Resources", () => {
     ElroySync = require("../../../src/lib/elroy-sync");
     done();
   });
+
   describe("populate them", () => {
     it("should not populate empty resources object", () => {
       const cluster = {
@@ -17,7 +18,8 @@ describe("Sync Cluster Resources", () => {
       const result = ElroySync.populateResources(cluster.resources);
       expect(result).to.be.empty;
     });
-    it("should not populate disable resources", () => {
+
+    it("should populate only active resources", () => {
       const cluster = {
         resources: {
           testDisable: {
@@ -43,6 +45,56 @@ describe("Sync Cluster Resources", () => {
         testActive2: {
           config: {
             branch: "test-pr"
+          }
+        }
+      };
+
+      const result = ElroySync.populateResources(cluster.resources);
+      expect(result).to.deep.equal(expected);
+    });
+
+    it("should populate all the properties for resources", () => {
+      const cluster = {
+        resources: {
+          app: {
+            disable: false,
+            branch: "master"
+          },
+          cfprojects: {
+            disable: false,
+            branch: "master",
+            containers: {
+              cfprojects: {
+                roleType: "default"
+              }
+            }
+          },
+          ingress: {
+            kind: "ingress",
+            file: "./ingress/ingress-internal.mustache"
+          }
+        }
+      };
+      const expected = {
+        app: {
+          config: {
+            branch: "master"
+          }
+        },
+        cfprojects: {
+          config: {
+            branch: "master",
+            containers: {
+              cfprojects: {
+                roleType: "default"
+              }
+            }
+          }
+        },
+        ingress: {
+          config: {
+            kind: "ingress",
+            file: "./ingress/ingress-internal.mustache"
           }
         }
       };
