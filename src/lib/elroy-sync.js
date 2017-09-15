@@ -66,20 +66,7 @@ class ElroySync {
   static SaveToElroy(def, events, options, retryCount) {
     const _self = this;
     return Promise.try(() => {
-      // Format for elroy
-      const cluster = {
-        name: def.cluster.metadata.name,
-        tier: def.cluster.metadata.type,
-        active: def.cluster.metadata.active || true, // Clusters are active by default
-        metadata: def.cluster.metadata,
-        kubernetes: {
-          cluster: def.cluster.metadata.cluster,
-          namespace: def.cluster.metadata.namespace,
-          server: def.server,
-          resourceConfig: def.rsConfig
-        },
-        resources: _self.populateResources(def.cluster.resources)
-      };
+      const cluster = _self.populateCluster(def);
 
       events.emitDebug(`Saving Cluster ${cluster.name} to Elroy...`);
       return _self.createCluster(cluster, events, options).catch(reason => {
@@ -155,6 +142,23 @@ class ElroySync {
         );
         throw updateReason;
       });
+  }
+
+  // populate Elroy cluster
+  static populateCluster(def) {
+    return {
+      name: def.cluster.metadata.name,
+      tier: def.cluster.metadata.type,
+      active: def.cluster.metadata.active || true, // Clusters are active by default
+      metadata: def.cluster.metadata,
+      kubernetes: {
+        cluster: def.cluster.metadata.cluster,
+        namespace: def.cluster.metadata.namespace,
+        server: def.server,
+        resourceConfig: def.rsConfig
+      },
+      resources: this.populateResources(def.resources())
+    };
   }
 
   // Populate resources in new format
