@@ -1,6 +1,7 @@
 "use strict";
 
 const expect = require("chai").expect;
+const Promise = require("bluebird");
 
 let ElroySync;
 let YamlHandler;
@@ -137,6 +138,22 @@ describe("Sync Cluster Resources", () => {
     const result = ElroySync.populateCluster(cluster);
     expect(result.resources[0]).to.deep.equal(expectedResource);
   });
+
+  it("should populate cluster with resources loaded from Yaml", done => {
+    return Promise.coroutine(function*() {
+      const clusterDefs = yield YamlHandler.loadClusterDefinitions(
+        "./test/fixture/clusters"
+      );
+      const expectedResource = { config: clusterDefs[3].resources()["auth"] };
+      const result = ElroySync.populateCluster(clusterDefs[3]);
+      expect(result.resources["auth"]).to.deep.equal(expectedResource);
+
+      done();
+    })().catch(err => {
+      done(err);
+    });
+  });
+
   after(function(done) {
     done();
   });
