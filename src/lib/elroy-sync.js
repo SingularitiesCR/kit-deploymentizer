@@ -132,7 +132,9 @@ class ElroySync {
     })
       .then(res => {
         events.emitDebug(
-          `Successfully updated Cluster ${cluster.name} to Elroy`
+          `Successfully updated Cluster ${cluster.name} to Elroy with resources: ${JSON.stringify(
+            cluster.resources
+          )}`
         );
         return res;
       })
