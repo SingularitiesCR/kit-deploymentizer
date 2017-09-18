@@ -139,7 +139,7 @@ describe("Sync Cluster Resources", () => {
     expect(result.resources[0]).to.deep.equal(expectedResource);
   });
 
-  it("should populate cluster with resources loaded from Yaml", done => {
+  it("should populate cluster with resources loaded from Yaml", () => {
     return Promise.coroutine(function*() {
       const clusterDefs = yield YamlHandler.loadClusterDefinitions(
         "./test/fixture/clusters"
@@ -150,13 +150,8 @@ describe("Sync Cluster Resources", () => {
       };
       const result = ElroySync.populateCluster(clusterDefs[3]);
       expect(result.resources["auth"]).to.deep.equal(expectedResource);
-
-      done();
-    })().catch(err => {
-      done(err);
     });
   });
-
   after(function(done) {
     done();
   });
