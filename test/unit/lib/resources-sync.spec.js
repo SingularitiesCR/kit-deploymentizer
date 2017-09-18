@@ -144,7 +144,10 @@ describe("Sync Cluster Resources", () => {
       const clusterDefs = yield YamlHandler.loadClusterDefinitions(
         "./test/fixture/clusters"
       );
-      const expectedResource = { config: clusterDefs[3].resources()["auth"] };
+      const testFixtureCluster = clusterDefs[3];
+      const expectedResource = {
+        config: testFixtureCluster.resources()["auth"]
+      };
       const result = ElroySync.populateCluster(clusterDefs[3]);
       expect(result.resources["auth"]).to.deep.equal(expectedResource);
 
