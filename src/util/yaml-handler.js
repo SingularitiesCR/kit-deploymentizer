@@ -11,6 +11,7 @@ const fseReadFile = Promise.promisify(fse.readFile);
 const fseReadDir = Promise.promisify(fse.readdir);
 const fseStat = Promise.promisify(fse.stat);
 const logger = require("log4js").getLogger();
+const mustache = require("mustache");
 
 // Static class for handling Files.
 class YamlHandler {
@@ -27,18 +28,18 @@ class YamlHandler {
   }
 
   /**
-	 * Loads all the image files into a set of nested objects
-	 * based on resource name and type:
-	 * {
+   * Loads all the image files into a set of nested objects
+   * based on resource name and type:
+   * {
 	 *   node-auth: { develop: {}, test: {}, release: {} },
 	 *   node-activity: { develop: {}, test: {}, release: {} },
 	 *   ...
 	 * }
-	 * @param  {[type]} basePath [description]
-	 * @return {{}}     complex object accessable by resource.type.image as Promise
-	 */
+   * @param  {[type]} basePath [description]
+   * @return {{}}     complex object accessable by resource.type.image as Promise
+   */
   static loadImageDefinitions(basePath) {
-    return Promise.coroutine(function*() {
+    return Promise.coroutine(function* () {
       const dirs = yield fseReadDir(basePath);
       let imageResourceDefs = {};
       for (let d = 0; d < dirs.length; d++) {
@@ -66,12 +67,12 @@ class YamlHandler {
   }
 
   /**
-	 * Loads the various Type definitions into an Associative Array.
-	 * @param  {[type]} loadPathPattern path/pattern to load type definitions from, uses glob pattern
-	 * @return {{type:definition}} Type Definitions as a Promise result
-	 */
+   * Loads the various Type definitions into an Associative Array.
+   * @param  {[type]} loadPathPattern path/pattern to load type definitions from, uses glob pattern
+   * @return {{type:definition}} Type Definitions as a Promise result
+   */
   static loadTypeDefinitions(loadPathPattern) {
-    return Promise.coroutine(function*() {
+    return Promise.coroutine(function* () {
       const files = yield glob(`${loadPathPattern}/*-var.yaml`);
       let typeDefs = {};
       for (let i = 0; i < files.length; i++) {
@@ -83,29 +84,35 @@ class YamlHandler {
   }
 
   /**
-	 * Loads the base Cluster/Config definitions. Everything is based off these files.
-	 * @return {object} Holding base cluster and config values as a Promise
-	 */
+   * Loads the base Cluster/Config definitions. Everything is based off these files.
+   * @return {object} Holding base cluster and config values as a Promise
+   */
   static loadBaseDefinitions(loadPath) {
-    return Promise.coroutine(function*() {
-      const cluster = yield YamlHandler.loadFile(
-        path.join(loadPath, "base-cluster.yaml")
-      );
+    return Promise.coroutine(function* () {
       const config = yield YamlHandler.loadFile(
         path.join(loadPath, "base-var.yaml")
       );
+      const clusterTemplate = yield fseReadFile(
+        path.join(loadPath, "base-cluster.mustache"),
+        "utf8"
+      );
+      const clusterRender = mustache.render(
+        clusterTemplate,
+        config
+      );
+      const cluster = yaml.load(clusterRender);
       const cDef = new ClusterDefinition(cluster, config);
       return cDef;
     })();
   }
 
   /**
-	 * Loads Cluster Definition Files.
-	 * @param  {[type]} basePath directory containing cluster files.
-	 * @return {[type]}          Returns a Promise with cluster information.
-	 */
+   * Loads Cluster Definition Files.
+   * @param  {[type]} basePath directory containing cluster files.
+   * @return {[type]}          Returns a Promise with cluster information.
+   */
   static loadClusterDefinitions(basePath) {
-    return Promise.coroutine(function*() {
+    return Promise.coroutine(function* () {
       const dirs = yield fseReadDir(basePath);
       let clusters = [];
       for (let i = 0; i < dirs.length; i++) {
@@ -135,12 +142,12 @@ class YamlHandler {
   }
 
   /**
-	 * Saves a file out to the specified directory
-		* @param  {[type]} dir     to save to
-		* @param  {[type]} name    name of the file
-		* @param  {[type]} content content to save
-		* @return {[type]}         returns a Promise
-		*/
+   * Saves a file out to the specified directory
+   * @param  {[type]} dir     to save to
+   * @param  {[type]} name    name of the file
+   * @param  {[type]} content content to save
+   * @return {[type]}         returns a Promise
+   */
   static saveResourceFile(dir, name, content) {
     const fileName = path.join(dir, `${name}.yaml`);
     return fseWriteFile(fileName, content);
