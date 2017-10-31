@@ -12,6 +12,7 @@ const fseReadDir = Promise.promisify(fse.readdir);
 const fseStat = Promise.promisify(fse.stat);
 const logger = require("log4js").getLogger();
 const mustache = require("mustache");
+const resourceHandler = require("../util/resource-handler");
 
 // Static class for handling Files.
 class YamlHandler {
@@ -96,10 +97,7 @@ class YamlHandler {
         path.join(loadPath, "base-cluster.mustache"),
         "utf8"
       );
-      const clusterRender = mustache.render(
-        clusterTemplate,
-        config
-      );
+      const clusterRender = mustache.render(clusterTemplate, config);
       const cluster = yaml.load(clusterRender);
       const cDef = new ClusterDefinition(cluster, config);
       return cDef;
@@ -109,9 +107,10 @@ class YamlHandler {
   /**
    * Loads Cluster Definition Files.
    * @param  {[type]} basePath directory containing cluster files.
+   * @param  {[type]} baseConfig base cluster configuration used to render templates.
    * @return {[type]}          Returns a Promise with cluster information.
    */
-  static loadClusterDefinitions(basePath) {
+  static loadClusterDefinitions(basePath, baseConfig) {
     return Promise.coroutine(function* () {
       const dirs = yield fseReadDir(basePath);
       let clusters = [];
@@ -119,23 +118,36 @@ class YamlHandler {
         let dir = dirs[i];
         logger.debug(`Found Cluster Dir: ${dir}`);
         // If there is not cluster file present, skip directory
-        const exists = yield YamlHandler.exists(
+        const yamlExists = yield YamlHandler.exists(
           path.join(basePath, dir, "cluster.yaml")
         );
-        if (exists) {
-          const cluster = yield YamlHandler.loadFile(
+        const mustacheExists = yield YamlHandler.exists(
+          path.join(basePath, dir, "cluster.mustache")
+        );
+        if (!yamlExists && !mustacheExists) {
+          logger.debug(`No Cluster file found for ${dir}, skipping...`);
+          continue;
+        }
+        let cluster;
+        let config = yield YamlHandler.loadFile(
+          path.join(basePath, dir, "configuration-var.yaml")
+        );
+        const kubeconfig = yield YamlHandler.loadFile(
+          path.join(basePath, dir, "kubeconfig.yaml")
+        );
+        if (yamlExists) {
+          cluster = yield YamlHandler.loadFile(
             path.join(basePath, dir, "cluster.yaml")
           );
-          const config = yield YamlHandler.loadFile(
-            path.join(basePath, dir, "configuration-var.yaml")
+        } else if (mustacheExists) {
+          const clusterTemplate = yield fseReadFile(
+            path.join(basePath, dir, "cluster.mustache"),
+            "utf8"
           );
-          const kubeconfig = yield YamlHandler.loadFile(
-            path.join(basePath, dir, "kubeconfig.yaml")
-          );
-          clusters.push(new ClusterDefinition(cluster, config, kubeconfig));
-        } else {
-          logger.debug(`No Cluster file found for ${dir}, skipping...`);
+          config = resourceHandler.merge(baseConfig, config);
+          cluster = mustache.render(clusterTemplate, config);
         }
+        clusters.push(new ClusterDefinition(cluster, config, kubeconfig));
       }
       return clusters;
     })();
