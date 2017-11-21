@@ -107,7 +107,7 @@ class YamlHandler {
   /**
    * Loads Cluster Definition Files.
    * @param  {[type]} basePath directory containing cluster files.
-   * @param  {[type]} baseConfig base cluster configuration used to render templates.
+   * @param  {ResourceConfig} baseConfig base cluster configuration used to render templates.
    * @return {[type]}          Returns a Promise with cluster information.
    */
   static loadClusterDefinitions(basePath, baseConfig) {
@@ -144,8 +144,9 @@ class YamlHandler {
             path.join(basePath, dir, "cluster.mustache"),
             "utf8"
           );
-          config = resourceHandler.merge(baseConfig, config);
-          cluster = mustache.render(clusterTemplate, config);
+          let merged = resourceHandler.merge(baseConfig, config);
+          let rendered = mustache.render(clusterTemplate, merged);
+          cluster = yaml.load(rendered);
         }
         clusters.push(new ClusterDefinition(cluster, config, kubeconfig));
       }
