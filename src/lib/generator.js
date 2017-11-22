@@ -252,8 +252,9 @@ class Generator {
         //	 if not defined skip
         if (!localConfig[containerName].image) {
           if (artifact.image_tag) {
-            const artifactBranch =
+            let artifactBranch =
               localConfig[containerName].branch || localConfig.branch;
+            artifactBranch = artifactBranch.replace(/\//, "-");
             if (
               !this.options.imageResourceDefs[artifact.image_tag] ||
               !this.options.imageResourceDefs[artifact.image_tag][
@@ -268,8 +269,7 @@ class Generator {
               );
             }
             localConfig[containerName].image = this.options.imageResourceDefs[
-              artifact.image_tag
-            ][artifactBranch].image;
+              artifact.image_tag][artifactBranch].image;
           } else {
             this.eventHandler.emitWarn(
               `No image tag found for ${artifact.name}`
