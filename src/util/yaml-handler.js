@@ -132,6 +132,7 @@ class YamlHandler {
         let config = yield YamlHandler.loadFile(
           path.join(basePath, dir, "configuration-var.yaml")
         );
+        config = resourceHandler.merge(baseConfig, config);
         const kubeconfig = yield YamlHandler.loadFile(
           path.join(basePath, dir, "kubeconfig.yaml")
         );
@@ -144,8 +145,7 @@ class YamlHandler {
             path.join(basePath, dir, "cluster.mustache"),
             "utf8"
           );
-          let merged = resourceHandler.merge(baseConfig, config);
-          let rendered = mustache.render(clusterTemplate, merged);
+          let rendered = mustache.render(clusterTemplate, config);
           cluster = yaml.load(rendered);
         }
         clusters.push(new ClusterDefinition(cluster, config, kubeconfig));
