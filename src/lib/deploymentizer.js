@@ -120,7 +120,8 @@ class Deploymentizer {
       }
       // Load the /cluster 'cluster.yaml' and 'configuration-var.yaml'
       const clusterDefs = yield yamlHandler.loadClusterDefinitions(
-        this.paths.cluster
+        this.paths.cluster,
+        baseClusterDef.configuration()
       );
 
       if (this.options.elroyUrl && this.options.elroySecret) {
