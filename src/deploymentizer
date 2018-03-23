@@ -120,6 +120,11 @@ program
     "The secret to use when making an Elroy API request",
     process.env.ELROY_SECRET
   )
+  .option(
+    "--ciBranch <string>",
+    "The branch to use as image fallback",
+    process.env.CI_BRANCH
+  )
   .parse(process.argv);
 
 if (program.debug) {
@@ -140,7 +145,8 @@ loadConf(program.conf).then(conf => {
     clusterType: program.clusterType,
     clusterName: program.clusterName,
     deployId: program.deployId,
-    fastRollback: program.fastRollback
+    fastRollback: program.fastRollback,
+    ciBranch: program.ciBranch
   });
   // Enable logging of all events from the deploymentizer
   deploymentizer.events.on(deploymentizer.events.INFO, function(message) {
