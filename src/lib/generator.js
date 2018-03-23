@@ -59,7 +59,8 @@ class Generator {
     resource,
     eventHandler,
     deployId,
-    fastRollback
+    fastRollback,
+    branch
   ) {
     this.options = {
       clusterDef: clusterDef,
@@ -69,7 +70,8 @@ class Generator {
       save: save || false,
       resource: resource || undefined,
       deployId: deployId || undefined,
-      fastRollback: fastRollback || false
+      fastRollback: fastRollback || false,
+      branch: branch || undefined
     };
     this.configPlugin = configPlugin;
     this.eventHandler = eventHandler;
@@ -253,7 +255,9 @@ class Generator {
         if (!localConfig[containerName].image) {
           if (artifact.image_tag) {
             let artifactBranch =
-              localConfig[containerName].branch || localConfig.branch;
+              localConfig[containerName].branch ||
+              localConfig.branch ||
+              this.options.branch;
             artifactBranch = artifactBranch.replace(/\//, "-");
             if (
               !this.options.imageResourceDefs[artifact.image_tag] ||
